@@ -1,0 +1,27 @@
+{
+  "name": "workday-student-companion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Chrome extension: live schedule calendar, RateMyProfessors ratings, and multi-degree planning for Workday Student",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.7.1",
+    "@preact/preset-vite": "^2.10.5",
+    "@types/chrome": "^0.2.2",
+    "jsdom": "^29.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^6.4.3",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "@preact/signals": "^2.9.3",
+    "pdfjs-dist": "^4.10.38",
+    "preact": "^10.29.7"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "courseSectionRow": [
+    "[data-automation-id='compositeContainer'] [data-automation-id='row']",
+    "table[data-automation-id='table'] tbody tr",
+    "[data-automation-id='gridRow']",
+    "[data-automation-id='rowContent']",
+    "[role='row'][data-automation-id]",
+    "[data-automation-id*='CourseSection'] [role='row']",
+    "[role='row']",
+    "table tbody tr",
+    "li[data-automation-id]"
+  ],
+  "sectionTitleCell": [
+    "[data-automation-id='promptOption']",
+    "[data-automation-id='compositeSubHeaderOne']",
+    "td[headers*='Course_Section'] [data-automation-id='textView']",
+    "[data-automation-id='textView']"
+  ],
+  "instructorCell": [
+    "td[headers*='Instructor'] [data-automation-id='textView']",
+    "[data-automation-id*='instructor']",
+    "[data-automation-id*='Instructor']",
+    "[data-automation-id='selectedItem']"
+  ],
+  "meetingPatternCell": [
+    "td[headers*='Meeting_Pattern'] [data-automation-id='textView']",
+    "td[headers*='Section_Details'] [data-automation-id='textView']",
+    "[data-automation-id*='meetingPattern']",
+    "[data-automation-id*='MeetingPattern']"
+  ],
+  "creditsCell": [
+    "td[headers*='Credit'] [data-automation-id='textView']",
+    "[data-automation-id*='credits']",
+    "[data-automation-id*='Credits']"
+  ],
+  "resultsContainer": [
+    "[data-automation-id='resultsContainer']",
+    "[data-automation-id='compositeContainer']",
+    "[data-automation-id='gridWidget']",
+    "main"
+  ],
+  "academicHistoryTable": [
+    "table[data-automation-id='table']",
+    "[data-automation-id='gridWidget'] table",
+    "[data-automation-id*='grid'] table",
+    "[role='table']",
+    "table"
+  ],
+  "savedScheduleTable": [
+    "table[data-automation-id='table']",
+    "[data-automation-id='gridWidget'] table",
+    "[data-automation-id*='grid'] table",
+    "[role='table']",
+    "table"
+  ],
+  "pageTitle": [
+    "[data-automation-id='pageHeaderTitleText']",
+    "h1[data-automation-id]",
+    "[data-automation-id='taskTitle']",
+    "[data-automation-id='pageHeader']",
+    "h1"
+  ]
+}
