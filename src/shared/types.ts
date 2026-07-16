@@ -195,6 +195,8 @@ export interface PlannerState {
   assignments: Record<string, string>;
   /** user-chosen display order of degree ids; unlisted ids sort last (absent on old data) */
   degreeOrder?: string[];
+  /** saved What-if tryout course codes (hypothetical, never counted as real) */
+  whatIfCourses?: string[];
 }
 
 // ---------- AI history ----------

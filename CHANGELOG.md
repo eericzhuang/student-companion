@@ -18,6 +18,9 @@ All notable user-facing changes to the extension.
   recommendations.
 - **Academic history** from Workday capture or transcript upload (PDF/text),
   fully editable.
+- **🔮 What-if course tryout**: test courses you're considering against every
+  degree's requirements — see before→after progress, per-course impact, and
+  commit winners to the semester plan with one click.
 
 ### Pro
 

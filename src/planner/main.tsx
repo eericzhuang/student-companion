@@ -26,12 +26,13 @@ import { DegreeImport } from './DegreeImport';
 import { ReviewEditor } from './ReviewEditor';
 import { OverlapView } from './OverlapView';
 import { PlannerBoard } from './PlannerBoard';
+import { WhatIf } from './WhatIf';
 import { PrereqEditor } from './PrereqEditor';
 import { AiAdvisor } from './AiAdvisor';
 import { AiHistory } from './AiHistory';
 import { isPro, isSupreme } from '../shared/plan';
 
-type Tab = 'progress' | 'advisor' | 'board' | 'overlap' | 'prereqs' | 'import' | 'history';
+type Tab = 'progress' | 'whatif' | 'advisor' | 'board' | 'overlap' | 'prereqs' | 'import' | 'history';
 
 interface PendingReview {
   degree: DegreeProgram;
@@ -309,9 +310,10 @@ function App() {
       )}
 
       <div class="pl-tabs">
-        {(['progress', 'advisor', 'board', 'overlap', 'prereqs', 'import', 'history'] as Tab[]).map((t) => (
+        {(['progress', 'whatif', 'advisor', 'board', 'overlap', 'prereqs', 'import', 'history'] as Tab[]).map((t) => (
           <button class={`pl-tab${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>
             {t === 'progress' && `Progress (${degrees.length})`}
+            {t === 'whatif' && '🔮 What-if'}
             {t === 'advisor' && '✨ AI Advisor'}
             {t === 'board' && 'Semester board'}
             {t === 'overlap' && 'Overlap'}
@@ -397,6 +399,17 @@ function App() {
             );
           })}
         </>
+      )}
+
+      {tab === 'whatif' && (
+        <WhatIf
+          degrees={degrees}
+          states={states}
+          terms={store.settings.terms}
+          plannerState={store.plannerState}
+          courseEquivalents={store.courseEquivalents}
+          reqOverrides={store.reqOverrides}
+        />
       )}
 
       {tab === 'advisor' && (

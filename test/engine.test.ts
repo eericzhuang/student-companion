@@ -6,6 +6,7 @@ import {
   normalizeCode,
 } from '../src/planner/engine/requirements';
 import { findOverlaps, groupOverlapsByCombo } from '../src/planner/engine/overlap';
+import { evaluateWhatIf } from '../src/planner/engine/whatIf';
 import { suggestSchedule } from '../src/planner/engine/scheduleSuggest';
 import { buildSchedulingPlan } from '../src/planner/engine/plan';
 import type { DegreeProgram, HistoryCourse, StoredDegree, TermConfig } from '../src/shared/types';
@@ -208,6 +209,69 @@ describe('evaluateDegree', () => {
     const g = evaluateDegree(degree, states, {}, { Core: { done: 1 } }).groups[0]!;
     expect(g.progress).toBe(2); // the larger computed value wins
     expect(g.manualDone).toBe(1);
+  });
+});
+
+describe('evaluateWhatIf', () => {
+  const mk = (id: string, groups: DegreeProgram['groups']): StoredDegree => ({
+    id,
+    name: id,
+    type: 'major',
+    totalCredits: null,
+    sourceUrl: null,
+    parsedAt: 0,
+    userEdited: false,
+    groups,
+  });
+  const cs = mk('cs', [
+    { title: 'Core', rule: { kind: 'all' }, courses: [course('CS 1110'), course('CS 3410')], notes: null },
+    { title: 'Math', rule: { kind: 'chooseN', n: 1 }, courses: [course('MATH 2940')], notes: null },
+  ]);
+  const ds = mk('ds', [
+    { title: 'Foundations', rule: { kind: 'all' }, courses: [course('MATH 2940')], notes: null },
+  ]);
+
+  it('shows before→after deltas and newly-satisfied groups without mutating base states', () => {
+    const states = buildCourseStates([hist('CS 1110')], [], []);
+    const r = evaluateWhatIf([cs, ds], states, ['CS 3410', 'MATH 2940'], {}, {});
+    const core = r.perDegree[0]!.groups[0]!;
+    expect(core.before.progress).toBe(1);
+    expect(core.after.progress).toBe(2);
+    expect(core.newlySatisfied).toBe(true);
+    // the same tryout course satisfies both degrees' math groups
+    expect(r.perDegree[0]!.satisfiedAfter).toBe(2);
+    expect(r.perDegree[1]!.groups[0]!.newlySatisfied).toBe(true);
+    // base states untouched (sandbox)
+    expect(states.planned.has('CS 3410')).toBe(false);
+  });
+
+  it('counts per-course impact across degrees; useless courses read 0', () => {
+    const states = buildCourseStates([hist('CS 1110')], [], []);
+    const r = evaluateWhatIf([cs, ds], states, ['MATH 2940', 'BIO 9999'], {}, {});
+    expect(r.courseImpact.get('MATH 2940')).toBe(2); // cs Math + ds Foundations
+    expect(r.courseImpact.get('BIO 9999')).toBe(0); // appears nowhere
+  });
+
+  it('a tryout course already completed adds nothing', () => {
+    const states = buildCourseStates([hist('CS 1110')], [], []);
+    const r = evaluateWhatIf([cs], states, ['CS 1110'], {}, {});
+    expect(r.courseImpact.get('CS 1110')).toBe(0);
+    expect(r.perDegree[0]!.groups[0]!.changed).toBe(false);
+  });
+
+  it('credits an equivalent tryout course to the requirement it satisfies', () => {
+    const eq = mk('eq', [
+      {
+        title: 'Calc',
+        rule: { kind: 'all' },
+        courses: [{ ...course('MATH 1910'), equivalents: ['MATH 1220'] }],
+        notes: null,
+      },
+    ]);
+    const states = buildCourseStates([], [], []);
+    const r = evaluateWhatIf([eq], states, ['MATH 1220'], {}, {});
+    expect(r.perDegree[0]!.groups[0]!.after.progress).toBe(1);
+    expect(r.courseImpact.get('MATH 1220')).toBe(1);
   });
 });
 
