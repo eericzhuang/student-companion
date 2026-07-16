@@ -22,6 +22,8 @@ interface Props {
 
 export function WhatIf({ degrees, states, terms, plannerState, courseEquivalents, reqOverrides }: Props) {
   const [input, setInput] = useState('');
+  // Course code whose term-picker dropdown is open (multi-term commit).
+  const [pickFor, setPickFor] = useState<string | null>(null);
   const tryCodes = plannerState.whatIfCourses ?? [];
 
   const save = (codes: string[]) =>
@@ -45,9 +47,8 @@ export function WhatIf({ degrees, states, terms, plannerState, courseEquivalents
   const remove = (code: string) => save(tryCodes.filter((c) => c !== code));
 
   // Commit: becomes a real planned course on the semester board.
-  const commit = (code: string) => {
-    const termId = terms[0]?.id;
-    if (!termId) return;
+  const commit = (code: string, termId: string) => {
+    setPickFor(null);
     void sendToBackground({
       kind: 'PLANNER_STATE_UPDATE',
       state: {
@@ -126,10 +127,26 @@ export function WhatIf({ degrees, states, terms, plannerState, courseEquivalents
                   <span class="pl-whatif-impact" title={impact === 0 ? 'This course would not advance any requirement — check the code, or it may already be counted' : `Advances ${impact} requirement group(s)`}>
                     {impact === 0 ? '⚠ no effect' : `+${impact} req${impact === 1 ? '' : 's'}`}
                   </span>
-                  {terms[0] && impact > 0 && (
-                    <button class="pl-whatif-commit" title={`Add to your real plan (${terms[0].label} on the Semester board)`} onClick={() => commit(code)}>
+                  {terms.length === 1 && terms[0] && impact > 0 && (
+                    <button class="pl-whatif-commit" title={`Add to your real plan (${terms[0].label} on the Semester board)`} onClick={() => commit(code, terms[0]!.id)}>
                       → plan
                     </button>
+                  )}
+                  {terms.length > 1 && impact > 0 && (
+                    <span class="pl-whatif-pick">
+                      <button class="pl-whatif-commit" title="Add to your real plan — pick which term" onClick={() => setPickFor(pickFor === code ? null : code)}>
+                        → plan ▾
+                      </button>
+                      {pickFor === code && (
+                        <span class="pl-whatif-pick-menu">
+                          {terms.map((t) => (
+                            <button class="pl-whatif-pick-item" onClick={() => commit(code, t.id)}>
+                              {t.label}
+                            </button>
+                          ))}
+                        </span>
+                      )}
+                    </span>
                   )}
                   <button class="pl-whatif-x" title="Remove from tryout" onClick={() => remove(code)}>
                     ✕

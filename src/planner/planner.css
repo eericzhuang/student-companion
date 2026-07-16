@@ -786,3 +786,32 @@ table.pl-table th { color: #475569; font-size: 12px; }
 
 .pl-whatif-won { background: #f5f3ff; border-radius: 10px; padding: 6px 8px; }
 .pl-whatif-tag { background: #ede9fe; border-color: #c4b5fd; color: #5b21b6; }
+
+/* term picker on commit (shown when more than one term is configured) */
+.pl-whatif-pick { position: relative; display: inline-block; }
+.pl-whatif-pick-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  background: #fff;
+  border: 1px solid #ddd6fe;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(76, 29, 149, 0.18);
+  overflow: hidden;
+}
+.pl-whatif-pick-item {
+  border: 0;
+  background: #fff;
+  padding: 6px 10px;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  color: #4c1d95;
+  white-space: nowrap;
+}
+.pl-whatif-pick-item:hover { background: #f5f3ff; }
+.pl-whatif-pick-item + .pl-whatif-pick-item { border-top: 1px solid #f3f0ff; }
