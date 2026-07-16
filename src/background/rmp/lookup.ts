@@ -6,6 +6,7 @@
 import type { RmpCacheEntry } from '../../shared/types';
 import { getStored, updateStored } from '../../shared/storage';
 import {
+  cleanInstructorName,
   CONFIDENT_MATCH,
   PLAUSIBLE_MATCH,
   nameKey,
@@ -45,6 +46,9 @@ export async function lookupInstructor(
   const school = settings.rmpSchool;
   if (!school) return { entry: null, needsSetup: true };
 
+  // Scraped names sometimes carry a glued field label ("InstructorKatsianos,
+  // Bill") — strip it or the search/match misses a listed professor.
+  instructorName = cleanInstructorName(instructorName);
   const key = cacheKey(instructorName);
 
   // Manual override wins

@@ -1003,3 +1003,50 @@
 .wdc-map-row.wdc-risk-miss { background: #fef2f2; color: #991b1b; }
 .wdc-map-row.wdc-risk-tight { background: #fffbeb; color: #92400e; }
 .wdc-map-row.wdc-risk-unknown { color: #64748b; }
+
+/* --- Route itinerary (replaces the old scatter map) --- */
+.wdc-itin { margin-top: 10px; }
+.wdc-itin-stop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #f8fafc;
+  border: 1px solid #e8edf3;
+  border-radius: 8px;
+  font-size: 12px;
+}
+.wdc-itin-num {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--wdc-accent, #0f4c81);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+.wdc-itin-time { flex: 0 0 auto; color: #64748b; font-size: 11px; min-width: 58px; }
+.wdc-itin-bld { color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wdc-itin-leg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px 5px 16px;
+  font-size: 11.5px;
+  color: #475569;
+  line-height: 1.45;
+}
+.wdc-itin-legline {
+  flex: 0 0 auto;
+  width: 2px;
+  height: 22px;
+  margin-left: 8px;
+  border-left: 2px dashed #cbd5e1;
+}
+.wdc-itin-leg.wdc-risk-miss { color: #991b1b; background: #fef2f2; border-radius: 8px; }
+.wdc-itin-leg.wdc-risk-tight { color: #92400e; background: #fffbeb; border-radius: 8px; }
+.wdc-itin-leg a { color: var(--wdc-accent, #0f4c81); }

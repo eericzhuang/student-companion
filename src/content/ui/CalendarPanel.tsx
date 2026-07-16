@@ -8,7 +8,7 @@
  * when the break between classes is shorter than the estimated walk.
  */
 import { signal } from '@preact/signals';
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type {
   CampusMap,
   DayMask,
@@ -29,6 +29,8 @@ import {
   type Transition,
 } from '../../shared/route';
 import { rmpProfessorUrl } from '../../shared/rmpUrl';
+import { displayInstructorName } from '../../shared/fuzzy';
+import { cleanSectionTitle } from '../../shared/schedule';
 import { addManualSection, removeSection, renameSection } from './scheduleEdit';
 import { useDraggable, type Pos } from './useDraggable';
 import { WeekGrid } from './WeekGrid';
@@ -47,6 +49,11 @@ export function CalendarPanel() {
   const [campusMap, setCampusMapState] = useState<CampusMap | null>(null);
   const [walkSpeed, setWalkSpeed] = useState(DEFAULT_WALK_KMH);
   const [selEvent, setSelEvent] = useState<{ section: Section; meeting: Meeting } | null>(null);
+  // Stretch the grid with the panel: a taller panel zooms the blocks so they
+  // can show room, professor, and rating inline.
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [gridScale, setGridScale] = useState(1);
+  const [ratings, setRatings] = useState<Map<string, number | null>>(new Map());
 
   const defaultPos = { x: Math.max(8, window.innerWidth - 456), y: 80 };
   const { pos, setPos, startDrag, wasDragged } = useDraggable(defaultPos, (p) =>
@@ -74,6 +81,42 @@ export function CalendarPanel() {
       un3();
     };
   }, []);
+
+  // Track panel resizes → grid zoom (default panel height ≈ 460px). The CSS
+  // resize handle changes the element size behind the framework's back, so
+  // poll cheaply instead of trusting ResizeObserver (unavailable in some
+  // embedded contexts); setState with an unchanged value re-renders nothing.
+  useEffect(() => {
+    const compute = () => {
+      const el = panelRef.current;
+      if (el) setGridScale(Math.round(Math.min(3, Math.max(1, (el.clientHeight - 90) / 370)) * 20) / 20);
+    };
+    compute();
+    const id = setInterval(compute, 400);
+    return () => clearInterval(id);
+  }, [collapsed]);
+
+  // Ratings for inline display on zoomed blocks (background caches lookups).
+  const sectionsForRatings = schedule?.sections ?? [];
+  useEffect(() => {
+    const names = [...new Set(sectionsForRatings.map((s) => s.instructor).filter((n): n is string => !!n))];
+    let cancelled = false;
+    void (async () => {
+      const next = new Map<string, number | null>();
+      for (const name of names) {
+        try {
+          const res = await sendToBackground<RmpLookupResult>({ kind: 'RMP_LOOKUP', instructorName: name });
+          next.set(name, res.entry?.teacher?.avgRating ?? null);
+        } catch {
+          next.set(name, null);
+        }
+      }
+      if (!cancelled) setRatings(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sectionsForRatings.map((s) => s.instructor).join('|')]);
 
   const persist = (p: Pos, isCollapsed: boolean) => {
     const next: PanelState = { x: p.x, y: p.y, collapsed: isCollapsed };
@@ -121,7 +164,7 @@ export function CalendarPanel() {
   }
 
   return (
-    <div class={`wdc-panel${pro ? ' wdc-pro' : ''}`} style={{ left: `${pos.x}px`, top: `${pos.y}px` }}>
+    <div ref={panelRef} class={`wdc-panel${pro ? ' wdc-pro' : ''}`} style={{ left: `${pos.x}px`, top: `${pos.y}px` }}>
       <div class="wdc-panel-header" onPointerDown={startDrag}>
         <span>📅 My Saved Schedule</span>
         <button onClick={() => setCollapsedPersist(true)}>—</button>
@@ -160,6 +203,8 @@ export function CalendarPanel() {
           sections={sections}
           ghost={ghostSection.value}
           warnings={gridWarnings}
+          scale={gridScale}
+          ratings={ratings}
           onEventClick={(section, meeting) => setSelEvent({ section, meeting })}
         />
       ) : view === 'free' ? (
@@ -196,13 +241,14 @@ function EventDetails({
 
   const t = rmp?.entry?.teacher ?? null;
   const url = t ? rmpProfessorUrl(t.teacherId) : null;
+  const title = cleanSectionTitle(section.courseCode, section.title);
 
   return (
     <div class="wdc-event-pop">
       <div class="wdc-event-pop-head">
         <b>
           {section.courseCode}
-          {section.title && section.title !== section.courseCode ? ` · ${section.title}` : ''}
+          {title && title !== section.courseCode ? ` · ${title}` : ''}
         </b>
         <button title="Close" onClick={onClose}>
           ✕
@@ -213,7 +259,7 @@ function EventDetails({
       </div>
       {meeting.location && <div class="wdc-event-pop-row">📍 {meeting.location}</div>}
       <div class="wdc-event-pop-row">
-        👤 {section.instructor ?? <i>instructor not captured</i>}
+        👤 {section.instructor ? displayInstructorName(section.instructor) : <i>instructor not captured</i>}
         {section.instructor && !rmp && <span class="wdc-event-rmp"> · looking up rating…</span>}
         {t && (
           <span class="wdc-event-rmp">
@@ -237,9 +283,11 @@ function EventDetails({
 }
 
 /**
- * Route view: the day's buildings as pins on a simple scatter map (no external
- * tiles), the walking order, and every between-class transition with its
- * break-vs-walk verdict.
+ * Route view: the selected day's itinerary — every class in order with the
+ * walk between buildings shown as distance + estimated time and a verdict
+ * (comfortable / tight / you may miss it). Each leg links to real walking
+ * directions on Google Maps. No tiles are embedded; coordinates come from
+ * free OSM geocoding (or AI research / manual entry in Options).
  */
 function RouteMap({
   sections,
@@ -269,6 +317,10 @@ function RouteMap({
   const missing = allBuildings.filter((b) => !buildings[b]);
 
   const locate = async (kind: 'osm' | 'ai') => {
+    if (kind === 'ai' && !pro) {
+      setNote('🤖 AI locate is a Pro feature — the free lookup covers buildings OpenStreetMap knows. You can also add coordinates yourself in ⚙ Options → Campus map.');
+      return;
+    }
     setBusy(kind);
     setNote(null);
     try {
@@ -278,7 +330,7 @@ function RouteMap({
       setNote(
         res.missing.length === 0
           ? 'All buildings located ✓'
-          : `Still missing: ${res.missing.join(', ')} — ${
+          : `Couldn't locate: ${res.missing.join(', ')} — ${
               kind === 'osm' ? 'try 🤖 AI locate, or ' : ''
             }add coordinates in ⚙ Options → Campus map.`,
       );
@@ -289,40 +341,30 @@ function RouteMap({
     }
   };
 
-  // The selected day's stops, in class order (deduped consecutive repeats).
-  const dayStops = useMemo(() => {
+  // The selected day's classes in order; legs between them come from the
+  // precomputed transitions (same sort order, so they pair up by index).
+  const dayEvents = useMemo(() => {
     if (!dayMask) return [];
-    const events = sections
-      .flatMap((s) => s.meetings.filter((m) => (m.days & dayMask) && m.location).map((m) => ({ s, m })))
+    return sections
+      .flatMap((s) => s.meetings.filter((m) => m.days & dayMask).map((m) => ({ s, m })))
       .sort((a, b) => a.m.startMin - b.m.startMin);
-    const stops: Array<{ building: string; code: string; startMin: number }> = [];
-    for (const { s, m } of events) {
-      const b = buildingOf(m.location!);
-      if (stops.length === 0 || stops[stops.length - 1]!.building !== b) {
-        stops.push({ building: b, code: s.courseCode, startMin: m.startMin });
-      }
-    }
-    return stops;
   }, [sections, dayMask]);
-
-  const located = dayStops.filter((s) => buildings[s.building]);
   const dayTrans = transitions.filter((t) => t.dayMask === dayMask);
 
-  // Normalize coordinates into an SVG viewport.
-  const W = 400;
-  const H = 230;
-  const PAD = 26;
-  const pts = located.map((s) => ({ ...s, ...buildings[s.building]! }));
-  const lats = pts.map((p) => p.lat);
-  const lngs = pts.map((p) => p.lng);
-  const span = (min: number, max: number) => (max - min < 1e-6 ? 1e-6 : max - min);
-  const x = (lng: number) =>
-    PAD + ((lng - Math.min(...lngs)) / span(Math.min(...lngs), Math.max(...lngs))) * (W - 2 * PAD);
-  const y = (lat: number) =>
-    H - PAD - ((lat - Math.min(...lats)) / span(Math.min(...lats), Math.max(...lats))) * (H - 2 * PAD);
-
+  const fmtDist = (m: number) =>
+    m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km · ${(m / 1609.34).toFixed(1)} mi`;
+  const gmaps = (t: Transition): string | null => {
+    const a = t.fromBuilding ? buildings[t.fromBuilding] : null;
+    const b = t.toBuilding ? buildings[t.toBuilding] : null;
+    if (!a || !b) return null;
+    return `https://www.google.com/maps/dir/?api=1&origin=${a.lat},${a.lng}&destination=${b.lat},${b.lng}&travelmode=walking`;
+  };
   const riskIcon = (r: Transition['risk']) =>
     r === 'miss' ? '🚨' : r === 'tight' ? '⚠️' : r === 'ok' ? '✅' : '❓';
+
+  const walked = dayTrans.filter((t) => (t.distanceM ?? 0) > 0);
+  const totalM = walked.reduce((sum, t) => sum + (t.distanceM ?? 0), 0);
+  const totalMin = walked.reduce((sum, t) => sum + (t.walkMin ?? 0), 0);
 
   if (allBuildings.length === 0) {
     return (
@@ -349,66 +391,77 @@ function RouteMap({
           <button class="wdc-capture-btn wdc-map-btn" disabled={busy !== null} onClick={() => void locate('osm')}>
             {busy === 'osm' ? 'Locating…' : '📍 Locate buildings (free)'}
           </button>
-          {missing.length > 0 && pro && (
-            <button class="wdc-capture-btn wdc-map-btn" disabled={busy !== null} onClick={() => void locate('ai')}>
-              {busy === 'ai' ? 'Researching…' : `🤖 AI locate ${missing.length} missing`}
+          {missing.length > 0 && (
+            <button
+              class="wdc-capture-btn wdc-map-btn"
+              disabled={busy !== null}
+              title={pro ? 'Web research finds buildings OpenStreetMap misses' : 'Pro feature'}
+              onClick={() => void locate('ai')}
+            >
+              {busy === 'ai' ? 'Researching…' : `🤖 AI locate ${missing.length} missing${pro ? '' : ' (Pro)'}`}
             </button>
           )}
         </span>
       </div>
       {note && <div class="wdc-map-note">{note}</div>}
 
-      {pts.length > 0 ? (
-        <svg class="wdc-map-svg" viewBox={`0 0 ${W} ${H}`}>
-          {pts.length > 1 && (
-            <polyline
-              points={pts.map((p) => `${x(p.lng)},${y(p.lat)}`).join(' ')}
-              fill="none"
-              stroke="var(--wdc-accent, #0f4c81)"
-              stroke-width="2"
-              stroke-dasharray="6 4"
-            />
-          )}
-          {pts.map((p, i) => (
-            <g>
-              <circle cx={x(p.lng)} cy={y(p.lat)} r="11" fill="var(--wdc-accent, #0f4c81)" />
-              <text x={x(p.lng)} y={y(p.lat) + 4} text-anchor="middle" fill="#fff" font-size="11" font-weight="700">
-                {i + 1}
-              </text>
-              <text x={x(p.lng)} y={y(p.lat) - 15} text-anchor="middle" font-size="10" fill="#334155">
-                {p.building}
-              </text>
-            </g>
-          ))}
-        </svg>
-      ) : (
+      <div class="wdc-itin">
+        {dayEvents.map(({ s, m }, i) => {
+          const leg = i > 0 ? dayTrans[i - 1] : null;
+          return (
+            <>
+              {leg && (
+                <div class={`wdc-itin-leg wdc-risk-${leg.risk}`}>
+                  <span class="wdc-itin-legline" />
+                  <span>
+                    {riskIcon(leg.risk)} {leg.breakMin} min break
+                    {leg.walkMin != null && leg.distanceM != null ? (
+                      leg.distanceM === 0 ? (
+                        <> · same building</>
+                      ) : (
+                        <>
+                          {' '}
+                          · <b>~{Math.round(leg.walkMin)} min walk</b> · {fmtDist(leg.distanceM)}
+                          {leg.risk === 'miss' && <b> — you may miss the start!</b>}
+                          {leg.risk === 'tight' && <b> — tight</b>}
+                          {gmaps(leg) && (
+                            <>
+                              {' '}
+                              <a href={gmaps(leg)!} target="_blank" rel="noreferrer">
+                                directions ↗
+                              </a>
+                            </>
+                          )}
+                        </>
+                      )
+                    ) : (
+                      <> · walk unknown — locate the buildings above</>
+                    )}
+                  </span>
+                </div>
+              )}
+              <div class="wdc-itin-stop">
+                <span class="wdc-itin-num">{i + 1}</span>
+                <span class="wdc-itin-time">{formatMinutes(m.startMin)}</span>
+                <b>{s.courseCode}</b>
+                <span class="wdc-itin-bld">
+                  {m.location ? buildingOf(m.location) : <i>no location</i>}
+                  {m.location && !buildings[buildingOf(m.location)] && ' ❓'}
+                </span>
+              </div>
+            </>
+          );
+        })}
+      </div>
+
+      {walked.length > 0 && (
         <div class="wdc-map-note">
-          No located buildings for this day yet — hit <b>📍 Locate buildings</b> above.
+          <b>Day total:</b> ~{Math.round(totalMin)} min walking · {fmtDist(totalM)}
         </div>
       )}
-
-      <div class="wdc-map-list">
-        {dayTrans.length === 0 && <div class="wdc-map-note">No back-to-back classes this day.</div>}
-        {dayTrans.map((t) => (
-          <div class={`wdc-map-row wdc-risk-${t.risk}`}>
-            {riskIcon(t.risk)} <b>{t.fromCode}</b> → <b>{t.toCode}</b>: {t.breakMin} min break
-            {t.walkMin != null ? (
-              <>
-                , ~{Math.round(t.walkMin)} min walk
-                {t.fromBuilding && t.toBuilding && t.fromBuilding !== t.toBuilding && (
-                  <> ({t.fromBuilding} → {t.toBuilding})</>
-                )}
-                {t.risk === 'miss' && <b> — you may miss the start!</b>}
-                {t.risk === 'tight' && <b> — tight, no dawdling</b>}
-              </>
-            ) : (
-              <> — walk unknown (locate the buildings above)</>
-            )}
-          </div>
-        ))}
-      </div>
       <div class="wdc-map-note wdc-map-fine">
-        Walk times are straight-line estimates × 1.3 — adjust your walking speed in ⚙ Options.
+        Estimates: straight-line distance × 1.3 at your walking speed (⚙ Options). ❓ = building not
+        located yet.
       </div>
     </div>
   );

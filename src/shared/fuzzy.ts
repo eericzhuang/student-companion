@@ -94,3 +94,23 @@ export function scoreNameMatch(
 
 export const CONFIDENT_MATCH = 0.85;
 export const PLAUSIBLE_MATCH = 0.6;
+
+/**
+ * Strip field-label junk Workday scrapes glue onto instructor names
+ * ("InstructorKatsianos, Bill", "Instructor: Anne Bracy", "Taught by X").
+ */
+export function cleanInstructorName(raw: string): string {
+  let s = raw.trim();
+  // glued label with no separator: "InstructorKatsianos" (case boundary)
+  s = s.replace(/^(?:Instructors?|Professors?|Faculty)(?=[A-Z])/, '');
+  // labeled with separator
+  s = s.replace(/^(?:instructors?|professors?|prof|faculty|taught by|staff)\b[:.\s]*/i, '');
+  return s.trim() || raw.trim();
+}
+
+/** Human display form: cleaned, and "Last, First" flipped to "First Last". */
+export function displayInstructorName(raw: string): string {
+  const s = cleanInstructorName(raw);
+  const m = s.match(/^([^,]+),\s*(.+)$/);
+  return m ? `${m[2]!.trim()} ${m[1]!.trim()}` : s;
+}

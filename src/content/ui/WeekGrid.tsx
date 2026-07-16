@@ -7,6 +7,7 @@ import { useMemo } from 'preact/hooks';
 import { DAYS, type DayMask, type Meeting, type Section } from '../../shared/types';
 import { formatMinutes, meetingsOverlap } from '../../shared/time';
 import { meetingKey } from '../../shared/route';
+import { displayInstructorName } from '../../shared/fuzzy';
 
 const DAY_ORDER: Array<{ mask: DayMask; label: string }> = [
   { mask: DAYS.MON, label: 'Mon' },
@@ -29,9 +30,15 @@ interface Props {
   warnings?: Map<string, { text: string; miss: boolean }>;
   /** clicking a block opens its details (professor, rating, room) */
   onEventClick?: (section: Section, meeting: Meeting) => void;
+  /** vertical zoom (1 = compact); a stretched panel passes >1 so taller blocks
+   *  reveal room, professor, and rating inline */
+  scale?: number;
+  /** instructor (raw scraped name) -> RMP avg rating, for inline display */
+  ratings?: Map<string, number | null>;
 }
 
-export function WeekGrid({ sections, ghost, warnings, onEventClick }: Props) {
+export function WeekGrid({ sections, ghost, warnings, onEventClick, scale = 1, ratings }: Props) {
+  const pxPerMin = PX_PER_MIN * Math.max(1, scale);
   const all = useMemo(() => [...sections, ...(ghost ? [ghost] : [])], [sections, ghost]);
 
   const showWeekend = useMemo(
@@ -59,9 +66,9 @@ export function WeekGrid({ sections, ghost, warnings, onEventClick }: Props) {
     return (id: string) => map.get(id) ?? '#475569';
   }, [sections]);
 
-  const totalHeight = (endHour - startHour) * 60 * PX_PER_MIN;
+  const totalHeight = (endHour - startHour) * 60 * pxPerMin;
   const top = (min: number) =>
-    (Math.min(Math.max(min, startHour * 60), endHour * 60) - startHour * 60) * PX_PER_MIN;
+    (Math.min(Math.max(min, startHour * 60), endHour * 60) - startHour * 60) * pxPerMin;
 
   const hours: number[] = [];
   for (let h = startHour; h <= endHour; h++) hours.push(h);
@@ -76,7 +83,7 @@ export function WeekGrid({ sections, ghost, warnings, onEventClick }: Props) {
           ghost.sectionId !== section.sectionId &&
           ghost.meetings.some((gm) => (gm.days & dayMask) && meetingsOverlap(gm, m));
         const warn = warnings?.get(meetingKey(section.sectionId, dayMask, m.startMin));
-        const heightPx = Math.max((m.endMin - m.startMin) * PX_PER_MIN, 14);
+        const heightPx = Math.max((m.endMin - m.startMin) * pxPerMin, 14);
         blocks.push(
           <div
             class={`wdc-block${conflictsGhost ? ' wdc-block-conflict' : ''}${onEventClick ? ' wdc-block-click' : ''}`}
@@ -98,6 +105,14 @@ export function WeekGrid({ sections, ghost, warnings, onEventClick }: Props) {
               {formatMinutes(m.startMin)}–{formatMinutes(m.endMin)}
             </div>
             {m.location && heightPx > 42 && <div class="wdc-block-room">📍 {m.location}</div>}
+            {section.instructor && heightPx > 58 && (
+              <div class="wdc-block-room">
+                👤 {displayInstructorName(section.instructor)}
+                {ratings?.get(section.instructor) != null && (
+                  <b> ★{ratings.get(section.instructor)!.toFixed(1)}</b>
+                )}
+              </div>
+            )}
           </div>,
         );
       }
@@ -110,7 +125,7 @@ export function WeekGrid({ sections, ghost, warnings, onEventClick }: Props) {
             class="wdc-block wdc-block-ghost"
             style={{
               top: `${top(m.startMin)}px`,
-              height: `${Math.max((m.endMin - m.startMin) * PX_PER_MIN, 14)}px`,
+              height: `${Math.max((m.endMin - m.startMin) * pxPerMin, 14)}px`,
             }}
           >
             <div>{ghost.courseCode}</div>

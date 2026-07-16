@@ -87,3 +87,37 @@ describe('dayTransitions', () => {
     expect(t[0]!.risk).toBe('ok');
   });
 });
+
+describe('scrape cleanup (real Workday tenant junk)', () => {
+  it('strips glued Instructor label so RMP can match', async () => {
+    const { cleanInstructorName, displayInstructorName, nameKey } = await import('../src/shared/fuzzy');
+    expect(cleanInstructorName('InstructorKatsianos, Bill')).toBe('Katsianos, Bill');
+    expect(cleanInstructorName('Instructor: Anne Bracy')).toBe('Anne Bracy');
+    expect(cleanInstructorName('Anne Bracy')).toBe('Anne Bracy');
+    expect(displayInstructorName('InstructorKatsianos, Bill')).toBe('Bill Katsianos');
+    // the cache/search key must see the real name
+    expect(nameKey(cleanInstructorName('InstructorKatsianos, Bill'))).toBe(nameKey('Bill Katsianos'));
+  });
+
+  it('cuts concatenated credit/enrollment junk out of titles', async () => {
+    const { cleanSectionTitle } = await import('../src/shared/schedule');
+    expect(
+      cleanSectionTitle(
+        'SDS 4030',
+        'SDS 4030 - Statistics for Data Science II3Quality Graded CreditSDS 4030-01 - Statistics for Data Science IIRegisteredLec',
+      ),
+    ).toBe('Statistics for Data Science II');
+    expect(cleanSectionTitle('CS 2110', 'Object-Oriented Programming & Data Structures')).toBe(
+      'Object-Oriented Programming & Data Structures',
+    );
+  });
+
+  it('transitions carry straight-line distance', () => {
+    const t = dayTransitions(
+      [section('A', 600, 650, 'Baker Hall 200'), section('B', 660, 710, 'Far Hall 101')],
+      BUILDINGS,
+    );
+    expect(t[0]!.distanceM!).toBeGreaterThan(2000);
+    expect(t[0]!.distanceM!).toBeLessThan(2500);
+  });
+});

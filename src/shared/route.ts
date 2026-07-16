@@ -63,6 +63,8 @@ export interface Transition {
   toBuilding: string | null;
   /** minutes between the first class ending and the next starting */
   breakMin: number;
+  /** straight-line distance in meters, or null when coordinates are missing */
+  distanceM: number | null;
   /** estimated walk, or null when either building has no coordinates */
   walkMin: number | null;
   risk: TransitionRisk;
@@ -116,12 +118,15 @@ export function dayTransitions(
       const fromB = cur.location ? buildingOf(cur.location) : null;
       const toB = next.location ? buildingOf(next.location) : null;
       let walkMin: number | null = null;
+      let distanceM: number | null = null;
       let risk: TransitionRisk = 'unknown';
       if (fromB && toB && fromB.toLowerCase() === toB.toLowerCase()) {
         walkMin = 0;
+        distanceM = 0;
         risk = 'ok';
       } else if (fromB && toB && buildings[fromB] && buildings[toB]) {
-        walkMin = walkMinutes(haversineMeters(buildings[fromB]!, buildings[toB]!), speedKmh);
+        distanceM = haversineMeters(buildings[fromB]!, buildings[toB]!);
+        walkMin = walkMinutes(distanceM, speedKmh);
         risk = walkMin > breakMin ? 'miss' : walkMin > breakMin * 0.75 ? 'tight' : 'ok';
       }
       out.push({
@@ -132,6 +137,7 @@ export function dayTransitions(
         fromBuilding: fromB,
         toBuilding: toB,
         breakMin,
+        distanceM,
         walkMin,
         risk,
         toKey: meetingKey(next.sectionId, mask, next.startMin),

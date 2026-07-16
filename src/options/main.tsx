@@ -767,6 +767,10 @@ function FeedbackSection({ settings }: { settings: Settings }) {
 
   const emailHref = () =>
     `mailto:eric2007118@gmail.com?subject=${encodeURIComponent(subject())}&body=${encodeURIComponent(body())}`;
+  const gmailHref = () =>
+    `https://mail.google.com/mail/?view=cm&fs=1&to=eric2007118@gmail.com&su=${encodeURIComponent(
+      subject(),
+    )}&body=${encodeURIComponent(body())}`;
   const githubHref = () =>
     `https://github.com/eericzhuang/student-companion/issues/new?title=${encodeURIComponent(
       subject(),
@@ -800,8 +804,17 @@ function FeedbackSection({ settings }: { settings: Settings }) {
         onInput={(e) => setText((e.target as HTMLTextAreaElement).value)}
       />
       <div class="pl-row" style={{ marginTop: '8px' }}>
-        <a class="pl-btn" style={{ textDecoration: 'none', textAlign: 'center' }} href={emailHref()}>
-          ✉️ Send by email
+        <a
+          class="pl-btn"
+          style={{ textDecoration: 'none', textAlign: 'center' }}
+          href={gmailHref()}
+          target="_blank"
+          rel="noreferrer"
+        >
+          📧 Open in Gmail
+        </a>
+        <a class="pl-btn secondary" style={{ textDecoration: 'none', textAlign: 'center' }} href={emailHref()}>
+          ✉️ Email app
         </a>
         <a
           class="pl-btn secondary"
@@ -810,7 +823,7 @@ function FeedbackSection({ settings }: { settings: Settings }) {
           target="_blank"
           rel="noreferrer"
         >
-          🐙 Open a GitHub issue
+          🐙 GitHub issue
         </a>
       </div>
     </div>
