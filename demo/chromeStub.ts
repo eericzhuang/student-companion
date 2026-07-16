@@ -46,6 +46,9 @@ const chromeStub = {
         case 'SETTINGS_UPDATE':
           write('settings', { ...(store.settings as object), ...(req.patch as object) });
           return { ok: true };
+        case 'OPEN_SUBSCRIBE':
+          window.location.href = '/subscribe.html';
+          return { ok: true };
         case 'PLANNER_STATE_UPDATE':
           write('plannerState', req.state);
           return { ok: true };

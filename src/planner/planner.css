@@ -1242,3 +1242,7 @@ table.pl-table th { color: #475569; font-size: 12px; }
 }
 .pl-guide-dots i.on { background: var(--lv-color, #0f4c81); }
 .pl-guide-btns { display: flex; align-items: center; gap: 8px; }
+
+/* clickable header badges: plan badge → subscribe page, level chip → Progress */
+.pl-badge-click { cursor: pointer; }
+.pl-badge-click:hover { filter: brightness(1.06); box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18); }

@@ -286,10 +286,16 @@ function App() {
   // Animations & flair are a Pro perk — the pl-pro class unlocks them in CSS.
   // Level themes color the whole planner from level 2 up (level 1 = standard).
   const shellClass = `pl-shell${pro ? ' pl-pro' : ''}${levelInfo && uiLv > 1 ? ` pl-themed pl-lv-${uiLv}` : ''}`;
+  // Both badges click through to the subscription page (manage / upgrade).
+  const openSubscribe = () => void sendToBackground({ kind: 'OPEN_SUBSCRIBE' });
   const planBadge = supreme ? (
-    <span class="pl-pro-badge supreme">👑 SUPREME</span>
+    <span class="pl-pro-badge supreme pl-badge-click" title="View your plan" onClick={openSubscribe}>
+      👑 SUPREME
+    </span>
   ) : pro ? (
-    <span class="pl-pro-badge">✨ PRO</span>
+    <span class="pl-pro-badge pl-badge-click" title="View your plan" onClick={openSubscribe}>
+      ✨ PRO
+    </span>
   ) : null;
 
   if (review) {
@@ -318,7 +324,17 @@ function App() {
       <div class="pl-header">
         <h1>
           🎓 Degree Planner {planBadge}
-          {levelInfo && <LevelChip info={levelInfo} previewLevel={previewLevel} themeLevel={themeLv} />}
+          {levelInfo && (
+            <LevelChip
+              info={levelInfo}
+              previewLevel={previewLevel}
+              themeLevel={themeLv}
+              onClick={() => {
+                setTab('progress');
+                window.scrollTo({ top: 0 });
+              }}
+            />
+          )}
         </h1>
         <div class="pl-row">
           <span class="pl-muted">

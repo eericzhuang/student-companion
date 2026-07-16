@@ -31,9 +31,11 @@ interface ChipProps {
   previewLevel?: number | null;
   /** theme the UI wears (real level, or the owner-pinned one) */
   themeLevel?: number;
+  /** clicking the chip jumps back to the Progress tab */
+  onClick?: () => void;
 }
 
-export function LevelChip({ info, previewLevel, themeLevel }: ChipProps) {
+export function LevelChip({ info, previewLevel, themeLevel, onClick }: ChipProps) {
   const previewing = previewLevel != null;
   // Preview swaps the text too (that's the point); a pinned theme only
   // changes the colors — the chip keeps telling the truth.
@@ -41,8 +43,9 @@ export function LevelChip({ info, previewLevel, themeLevel }: ChipProps) {
   const wear = previewing ? previewLevel : (themeLevel ?? info.level);
   return (
     <span
-      class={`pl-lv-chip pl-lv-${wear}${previewing ? ' pl-lv-previewing' : ''}`}
-      title={previewing ? `Theme preview — you are really Level ${info.level} (${info.xp} XP)` : `${info.xp} XP — ${info.title}`}
+      class={`pl-lv-chip pl-lv-${wear}${previewing ? ' pl-lv-previewing' : ''}${onClick ? ' pl-badge-click' : ''}`}
+      title={previewing ? `Theme preview — you are really Level ${info.level} (${info.xp} XP)` : `${info.xp} XP — ${info.title} · click to see your progress`}
+      onClick={onClick}
     >
       {previewing && '🎭 '}
       {shown.icon} Lv {shown.level} · {shown.title}
