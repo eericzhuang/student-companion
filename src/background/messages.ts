@@ -4,6 +4,7 @@
  */
 import type {
   AcademicHistory,
+  CampusMap,
   DegreeProgram,
   PanelState,
   PlannerState,
@@ -45,6 +46,10 @@ export type ExtRequest =
   | { kind: 'EQUIV_SET'; code: string; equivalents: string[] }
   | { kind: 'EQUIV_DELETE'; code: string }
   | { kind: 'REQ_OVERRIDE_SET'; key: string; value: ReqOverrideValue | null }
+  // --- campus map (walk-time warnings) ---
+  | { kind: 'MAP_GEOCODE'; buildings: string[] }
+  | { kind: 'MAP_RESEARCH'; buildings: string[] }
+  | { kind: 'MAP_SET'; map: CampusMap }
   | { kind: 'AI_TEST' }
   // --- billing (only when a billing backend is configured) ---
   | { kind: 'LICENSE_ACTIVATE'; code: string }
@@ -57,6 +62,12 @@ export type ExtRequest =
 export type ExtResponse =
   | { ok: true; data?: unknown }
   | { ok: false; error: string };
+
+export interface MapLookupResult {
+  map: CampusMap;
+  /** buildings still without coordinates after the lookup */
+  missing: string[];
+}
 
 export interface RmpLookupResult {
   entry: RmpCacheEntry | null;

@@ -42,6 +42,8 @@ export default defineManifest({
     'https://*.myworkday.com/*',
     'https://www.ratemyprofessors.com/*',
     'https://api.anthropic.com/*',
+    // Free building geocoding for campus-map walk-time warnings
+    'https://nominatim.openstreetmap.org/*',
   ],
   optional_host_permissions: ['https://*/*'],
   web_accessible_resources: [

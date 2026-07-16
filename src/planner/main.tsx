@@ -525,6 +525,14 @@ function App() {
       )}
 
       {tab === 'history' && <AiHistory />}
+
+      <p class="pl-muted" style={{ textAlign: 'center', marginTop: '24px' }}>
+        🐛 Found a problem, or have a suggestion?{' '}
+        <button class="pl-link-inline" onClick={() => chrome.runtime.openOptionsPage()}>
+          Send feedback
+        </button>{' '}
+        — the 💬 Feedback section in Options goes straight to the developer.
+      </p>
     </div>
   );
 }

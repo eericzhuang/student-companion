@@ -11,6 +11,7 @@ import { CaptureWidget } from '../src/content/ui/CaptureWidget';
 import { RmpAllPanel } from '../src/content/ui/RmpAllPanel';
 import { currentPageSignal, rmpPanelSignal } from '../src/content/ui/captureState';
 import { themeRoot } from '../src/content/ui/theme';
+import { CalendarPanel } from '../src/content/ui/CalendarPanel';
 import { DegreeImport } from '../src/planner/DegreeImport';
 import { findConflicts } from '../src/shared/time';
 import {
@@ -283,6 +284,8 @@ function Demo() {
       <ImportDemo />
       {/* Floating capture button — the new "notify me when to capture" control. */}
       <CaptureWidget />
+      {/* The real floating calendar panel (grid, free time, Route map, edit). */}
+      <CalendarPanel />
       {/* "Rate all professors on this page" panel (toggled from the capture widget). */}
       {rmpPanelSignal.value && <RmpAllPanel />}
     </div>

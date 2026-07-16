@@ -913,3 +913,93 @@
   background: #eef6ff;
   border-color: #93c5fd;
 }
+
+/* --- event details: room on blocks, walk warnings, click popover --- */
+.wdc-block-click { cursor: pointer; }
+.wdc-block-click:hover { filter: brightness(1.12); }
+.wdc-block-room {
+  font-size: 9.5px;
+  opacity: 0.9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wdc-block-warn {
+  position: absolute;
+  top: 1px;
+  right: 3px;
+  font-size: 11px;
+  filter: drop-shadow(0 0 2px #92400e);
+}
+.wdc-block-warn.wdc-warn-miss { filter: drop-shadow(0 0 3px #dc2626); font-size: 13px; }
+
+.wdc-event-pop {
+  margin: 8px 10px 0;
+  padding: 9px 11px;
+  background: #fff;
+  border: 1.5px solid var(--wdc-accent, #0f4c81);
+  border-radius: 10px;
+  font-size: 12px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.15);
+}
+.wdc-event-pop-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  margin-bottom: 4px;
+}
+.wdc-event-pop-head button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 13px;
+}
+.wdc-event-pop-row { margin: 2px 0; line-height: 1.45; }
+.wdc-event-rmp { color: #475569; }
+.wdc-event-rmp a { color: var(--wdc-accent, #0f4c81); }
+
+/* --- Route view: day pin map + transition verdicts --- */
+.wdc-map { padding: 8px 10px 10px; overflow: auto; }
+.wdc-map-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.wdc-map-days { display: inline-flex; gap: 3px; }
+.wdc-map-days button {
+  border: 1px solid #d5d9de;
+  background: #fff;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.wdc-map-days button.active { background: var(--wdc-accent, #0f4c81); color: #fff; border-color: transparent; }
+.wdc-map-btn { display: inline-block; width: auto; margin: 0 0 0 6px; padding: 4px 10px; font-size: 11px; }
+.wdc-map-note { margin: 8px 2px 0; font-size: 11.5px; color: #475569; line-height: 1.45; }
+.wdc-map-fine { color: #94a3b8; font-size: 10.5px; }
+.wdc-map-svg {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  background: #f0f6ff;
+  border: 1px solid #dbe4f0;
+  border-radius: 10px;
+}
+.wdc-map-list { margin-top: 8px; }
+.wdc-map-row {
+  padding: 5px 8px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  margin-bottom: 3px;
+  background: #f8fafc;
+}
+.wdc-map-row.wdc-risk-miss { background: #fef2f2; color: #991b1b; }
+.wdc-map-row.wdc-risk-tight { background: #fffbeb; color: #92400e; }
+.wdc-map-row.wdc-risk-unknown { color: #64748b; }

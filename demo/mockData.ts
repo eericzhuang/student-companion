@@ -25,7 +25,18 @@ export const mockSchedule: Section[] = [
   sec('MATH 1920-002', 'MATH 1920', 'Multivariable Calculus', 4, 'David Mermin', 'TTh | 1:25 PM - 2:40 PM | Malott 251'),
   sec('PHYS 1112-003', 'PHYS 1112', 'Physics I: Mechanics', 4, 'Natasha Holmes', 'MW | 2:00 PM - 3:15 PM | Rockefeller 201'),
   sec('ENGL 2010-001', 'ENGL 2010', 'Writing Seminar', 3, 'Grace Chen', 'TTh | 10:10 AM - 11:25 AM | Goldwin 142'),
+  // 10-minute break after CS 2110 but a ~2 km walk — demos the route warning.
+  sec('CHEM 2090-001', 'CHEM 2090', 'General Chemistry', 4, 'Kyle Lancaster', 'MWF | 11:00 AM - 11:50 AM | Olin 155'),
 ];
+
+/** Canned geocoding results for the demo (distances engineered: Olin is ~2 km from Hollister). */
+export const mockBuildingCoords: Record<string, { lat: number; lng: number }> = {
+  Hollister: { lat: 42.444, lng: -76.484 },
+  Olin: { lat: 42.462, lng: -76.484 },
+  Rockefeller: { lat: 42.4495, lng: -76.482 },
+  Malott: { lat: 42.4483, lng: -76.4802 },
+  Goldwin: { lat: 42.447, lng: -76.4855 },
+};
 
 /** A search result the student is considering — conflicts with CS 2110. */
 export const mockGhostConflict: Section = sec(

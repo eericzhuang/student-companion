@@ -3,7 +3,7 @@
  * browser tab for the demo. Seeds storage with mock data and answers the few
  * runtime messages the UI sends.
  */
-import { mockStore, mockRmpTeachers } from './mockData';
+import { mockStore, mockRmpTeachers, mockBuildingCoords } from './mockData';
 
 type Listener = (changes: Record<string, { newValue: unknown }>, area: string) => void;
 const listeners = new Set<Listener>();
@@ -48,6 +48,26 @@ const chromeStub = {
           return { ok: true };
         case 'OPEN_SUBSCRIBE':
           window.location.href = '/subscribe.html';
+          return { ok: true };
+        case 'MAP_GEOCODE':
+        case 'MAP_RESEARCH': {
+          const cur = (store.campusMap as { school: string | null; buildings: Record<string, unknown> }) ?? {
+            school: 'Cornell University',
+            buildings: {},
+          };
+          const buildings = { ...cur.buildings };
+          const missing: string[] = [];
+          for (const name of req.buildings as string[]) {
+            const hit = mockBuildingCoords[name];
+            if (hit) buildings[name] = { ...hit, source: req.kind === 'MAP_GEOCODE' ? 'osm' : 'ai' };
+            else if (!buildings[name]) missing.push(name);
+          }
+          const map = { school: 'Cornell University', buildings };
+          write('campusMap', map);
+          return { ok: true, data: { map, missing } };
+        }
+        case 'MAP_SET':
+          write('campusMap', req.map);
           return { ok: true };
         case 'PLANNER_STATE_UPDATE':
           write('plannerState', req.state);

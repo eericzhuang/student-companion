@@ -10,7 +10,14 @@ All notable user-facing changes to the extension.
   real tabs — auto-plays on first visit, replayable anytime from ❓ Guide.
 - **Live schedule calendar** on Find Course Sections and saved-schedule pages:
   draggable/resizable week grid, conflict highlighting, free-time list view,
-  manual add/remove/rename of sections.
+  manual add/remove/rename of sections. Rooms show on event blocks; click any
+  class for its professor, live RMP rating, and location.
+- **Route view + "you might miss class" warnings**: building coordinates are
+  looked up for free (OpenStreetMap), the day's walk is drawn as a pin map,
+  and any break shorter than the estimated walk gets a 🚨 warning on the
+  calendar (walking speed adjustable; coordinates editable in Options).
+- **💬 Feedback** section in Options — report problems or send suggestions by
+  pre-filled email or GitHub issue.
 - **RateMyProfessors ratings** inline next to instructor names, plus a
   "professors on this page" panel with comments, links to RMP profiles,
   manual name lookup, and a wrong-person correction flow.
@@ -44,6 +51,8 @@ All notable user-facing changes to the extension.
   term).
 - **AI transcript parsing** and **AI degree-catalog parsing** (more accurate
   than the rule-based fallback).
+- **🤖 AI building lookup** for campus buildings the free geocoder can't find
+  (runs through the plan's AI allowance).
 - AI history log, animated Pro UI.
 
 ### Supreme

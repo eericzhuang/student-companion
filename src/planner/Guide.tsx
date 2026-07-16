@@ -72,7 +72,7 @@ const STEPS: Step[] = [
     tab: 'progress',
     icon: '🖥',
     title: 'And on Workday itself…',
-    body: 'A floating schedule calendar with conflict warnings, a capture widget that saves your courses into this planner, and RateMyProfessors ratings next to instructor names. Toggle everything in ⚙ Options. Enjoy! 🎉',
+    body: 'A floating schedule calendar with conflict + walk-time warnings (click any class for its professor, rating, and room; the Route view maps your day), a capture widget that saves your courses into this planner, and RateMyProfessors ratings next to instructor names. Toggle everything in ⚙ Options. Enjoy! 🎉',
   },
 ];
 

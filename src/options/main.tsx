@@ -4,7 +4,7 @@
  */
 import { render } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import type { AcademicHistory, HistoryCourse, RmpSchool, Settings, TermConfig } from '../shared/types';
+import type { AcademicHistory, CampusMap, HistoryCourse, RmpSchool, Settings, TermConfig } from '../shared/types';
 import { getStored } from '../shared/storage';
 import {
   sendToBackground,
@@ -46,7 +46,9 @@ function App() {
       <AcademicHistorySection />
       <ApiKeySection settings={settings} patch={patch} />
       <TermSection settings={settings} patch={patch} />
+      <CampusMapSection settings={settings} patch={patch} />
       <AdvancedSelectors settings={settings} patch={patch} />
+      <FeedbackSection settings={settings} />
       <AdminSection settings={settings} patch={patch} />
       <p class="pl-muted" style={{ textAlign: 'center', marginTop: '18px' }}>
         Something broken, or a school layout we don't recognize?{' '}
@@ -633,6 +635,186 @@ async function sha256Hex(text: string): Promise<string> {
   return Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
+}
+
+/**
+ * Campus map: the building coordinates behind the calendar's walk-time
+ * warnings. Filled by free geocoding / AI research from the calendar's Route
+ * view; fully editable here. Walking speed feeds the same estimates.
+ */
+function CampusMapSection({ settings, patch }: SectionProps) {
+  const [map, setMap] = useState<CampusMap | null>(null);
+  const [name, setName] = useState('');
+  const [lat, setLat] = useState('');
+  const [lng, setLng] = useState('');
+
+  useEffect(() => {
+    void getStored('campusMap').then(setMap);
+  }, []);
+
+  if (!map) return null;
+  const entries = Object.entries(map.buildings).sort(([a], [b]) => a.localeCompare(b));
+
+  const save = (next: CampusMap) => {
+    setMap(next);
+    void sendToBackground({ kind: 'MAP_SET', map: next });
+  };
+  const setCoord = (building: string, field: 'lat' | 'lng', value: string) => {
+    const n = parseFloat(value);
+    if (!Number.isFinite(n)) return;
+    save({
+      ...map,
+      buildings: { ...map.buildings, [building]: { ...map.buildings[building]!, [field]: n, source: 'manual' } },
+    });
+  };
+  const remove = (building: string) => {
+    const next = { ...map.buildings };
+    delete next[building];
+    save({ ...map, buildings: next });
+  };
+  const add = () => {
+    const la = parseFloat(lat);
+    const ln = parseFloat(lng);
+    if (!name.trim() || !Number.isFinite(la) || !Number.isFinite(ln)) return;
+    save({ ...map, buildings: { ...map.buildings, [name.trim()]: { lat: la, lng: ln, source: 'manual' } } });
+    setName('');
+    setLat('');
+    setLng('');
+  };
+
+  return (
+    <div class="pl-card">
+      <h2>🗺 Campus map</h2>
+      <p class="pl-muted">
+        Building coordinates power the calendar's <b>Route</b> view and its "you might miss class"
+        walk-time warnings. The calendar can fill these automatically (free OpenStreetMap lookup, or
+        AI research on Pro) — fix or add any building here.
+        {map.school ? ` Current school: ${map.school}.` : ' Pick your school above first for better lookups.'}
+      </p>
+      <div class="pl-row" style={{ marginBottom: '10px' }}>
+        <label style={{ flex: '0 0 auto' }}>🚶 Walking speed</label>
+        <input
+          type="number"
+          step="0.1"
+          min="1"
+          max="15"
+          style={{ width: '90px', flex: '0 0 auto' }}
+          value={settings.walkSpeedKmh ?? 4.8}
+          onChange={(e) => void patch({ walkSpeedKmh: parseFloat((e.target as HTMLInputElement).value) || 4.8 })}
+        />
+        <span class="pl-muted">km/h (4.8 ≈ normal pace; estimates include a 1.3× detour factor)</span>
+      </div>
+      {entries.length > 0 && (
+        <table class="pl-table">
+          <thead>
+            <tr>
+              <th>Building</th>
+              <th>Latitude</th>
+              <th>Longitude</th>
+              <th>Source</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map(([building, b]) => (
+              <tr>
+                <td>{building}</td>
+                <td>
+                  <input type="number" step="0.0001" value={b.lat} onChange={(e) => setCoord(building, 'lat', (e.target as HTMLInputElement).value)} />
+                </td>
+                <td>
+                  <input type="number" step="0.0001" value={b.lng} onChange={(e) => setCoord(building, 'lng', (e.target as HTMLInputElement).value)} />
+                </td>
+                <td>{b.source === 'osm' ? '🌍 OSM' : b.source === 'ai' ? '🤖 AI' : '✍️ manual'}</td>
+                <td>
+                  <button class="pl-link-inline" title="Remove" onClick={() => remove(building)}>
+                    ✕
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <div class="pl-row" style={{ marginTop: '10px' }}>
+        <input placeholder="Building name, e.g. Baker Hall" value={name} onInput={(e) => setName((e.target as HTMLInputElement).value)} />
+        <input style={{ width: '120px', flex: '0 0 auto' }} placeholder="lat" value={lat} onInput={(e) => setLat((e.target as HTMLInputElement).value)} />
+        <input style={{ width: '120px', flex: '0 0 auto' }} placeholder="lng" value={lng} onInput={(e) => setLng((e.target as HTMLInputElement).value)} />
+        <button class="pl-btn" style={{ flex: '0 0 auto' }} onClick={add} disabled={!name.trim() || !lat || !lng}>
+          Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Problems & suggestions, straight to the developer: a short form that opens
+ * a pre-filled email or a pre-filled GitHub issue — no backend, and the
+ * diagnostics (version + plan) ride along automatically.
+ */
+function FeedbackSection({ settings }: { settings: Settings }) {
+  const [kind, setKind] = useState<'problem' | 'suggestion'>('problem');
+  const [text, setText] = useState('');
+
+  const diagnostics = () => {
+    const version = chrome.runtime.getManifest?.().version ?? 'dev';
+    return `\n\n---\nversion: ${version} · plan: ${settings.plan}${settings.admin ? ' (owner)' : ''} · school: ${settings.rmpSchool?.name ?? 'not set'}`;
+  };
+  const subject = () =>
+    `[Student Companion] ${kind === 'problem' ? 'Problem report' : 'Suggestion'}`;
+  const body = () => (text.trim() || '(describe it here)') + diagnostics();
+
+  const emailHref = () =>
+    `mailto:eric2007118@gmail.com?subject=${encodeURIComponent(subject())}&body=${encodeURIComponent(body())}`;
+  const githubHref = () =>
+    `https://github.com/eericzhuang/student-companion/issues/new?title=${encodeURIComponent(
+      subject(),
+    )}&body=${encodeURIComponent(body())}`;
+
+  return (
+    <div class="pl-card">
+      <h2>💬 Feedback</h2>
+      <p class="pl-muted">
+        Ran into a problem, or have an idea? Describe it below, then send it however you prefer —
+        version and plan info are attached automatically (never your courses or grades).
+      </p>
+      <div class="pl-row" style={{ marginBottom: '8px' }}>
+        <select
+          style={{ width: 'auto', flex: '0 0 auto' }}
+          value={kind}
+          onChange={(e) => setKind((e.target as HTMLSelectElement).value as 'problem' | 'suggestion')}
+        >
+          <option value="problem">🐛 Report a problem</option>
+          <option value="suggestion">💡 Make a suggestion</option>
+        </select>
+      </div>
+      <textarea
+        style={{ minHeight: '90px' }}
+        placeholder={
+          kind === 'problem'
+            ? 'What happened, and on which page? (e.g. "calendar shows nothing on the saved-schedule page")'
+            : 'What would make the extension better for you?'
+        }
+        value={text}
+        onInput={(e) => setText((e.target as HTMLTextAreaElement).value)}
+      />
+      <div class="pl-row" style={{ marginTop: '8px' }}>
+        <a class="pl-btn" style={{ textDecoration: 'none', textAlign: 'center' }} href={emailHref()}>
+          ✉️ Send by email
+        </a>
+        <a
+          class="pl-btn secondary"
+          style={{ textDecoration: 'none', textAlign: 'center' }}
+          href={githubHref()}
+          target="_blank"
+          rel="noreferrer"
+        >
+          🐙 Open a GitHub issue
+        </a>
+      </div>
+    </div>
+  );
 }
 
 function AdminSection({ settings, patch }: SectionProps) {

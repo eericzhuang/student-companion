@@ -16,6 +16,7 @@ import {
   testAiConnection,
 } from './claude/client';
 import { heuristicParseDegree } from './degreeHeuristic';
+import { aiLocateBuildings, geocodeBuildings, setCampusMap } from './map';
 import { activateLicense, refreshLicense } from './billing';
 import { parseTranscriptText } from '../shared/transcript';
 import { aiCallStatus, isSupreme } from '../shared/plan';
@@ -214,6 +215,17 @@ async function handle(req: ExtRequest, trusted: boolean): Promise<unknown> {
         else next[req.key] = req.value;
         return next;
       });
+      return null;
+    case 'MAP_GEOCODE':
+      // Free for everyone: OpenStreetMap Nominatim, rate-limited + cached.
+      return geocodeBuildings(req.buildings);
+    case 'MAP_RESEARCH': {
+      const { settings } = await getAllStored();
+      requireAi(aiCallStatus(settings), 'AI building lookup');
+      return aiLocateBuildings(req.buildings);
+    }
+    case 'MAP_SET':
+      await setCampusMap(req.map);
       return null;
     case 'AI_TEST':
       // Deliberately ungated: a key-format/network diagnostic (4 max_tokens on

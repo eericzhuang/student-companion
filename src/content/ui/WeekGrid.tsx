@@ -4,8 +4,9 @@
  * a ghost get a red conflict outline.
  */
 import { useMemo } from 'preact/hooks';
-import { DAYS, type DayMask, type Section } from '../../shared/types';
+import { DAYS, type DayMask, type Meeting, type Section } from '../../shared/types';
 import { formatMinutes, meetingsOverlap } from '../../shared/time';
+import { meetingKey } from '../../shared/route';
 
 const DAY_ORDER: Array<{ mask: DayMask; label: string }> = [
   { mask: DAYS.MON, label: 'Mon' },
@@ -24,9 +25,13 @@ const PX_PER_MIN = 0.8; // vertical scale; a 10-hour span ≈ 480px
 interface Props {
   sections: Section[];
   ghost: Section | null;
+  /** meetingKey -> warning ("10 min break, ~26 min walk …"); ⚠-badges the block */
+  warnings?: Map<string, { text: string; miss: boolean }>;
+  /** clicking a block opens its details (professor, rating, room) */
+  onEventClick?: (section: Section, meeting: Meeting) => void;
 }
 
-export function WeekGrid({ sections, ghost }: Props) {
+export function WeekGrid({ sections, ghost, warnings, onEventClick }: Props) {
   const all = useMemo(() => [...sections, ...(ghost ? [ghost] : [])], [sections, ghost]);
 
   const showWeekend = useMemo(
@@ -70,20 +75,29 @@ export function WeekGrid({ sections, ghost }: Props) {
           ghost !== null &&
           ghost.sectionId !== section.sectionId &&
           ghost.meetings.some((gm) => (gm.days & dayMask) && meetingsOverlap(gm, m));
+        const warn = warnings?.get(meetingKey(section.sectionId, dayMask, m.startMin));
+        const heightPx = Math.max((m.endMin - m.startMin) * PX_PER_MIN, 14);
         blocks.push(
           <div
-            class={`wdc-block${conflictsGhost ? ' wdc-block-conflict' : ''}`}
+            class={`wdc-block${conflictsGhost ? ' wdc-block-conflict' : ''}${onEventClick ? ' wdc-block-click' : ''}`}
             style={{
               top: `${top(m.startMin)}px`,
-              height: `${Math.max((m.endMin - m.startMin) * PX_PER_MIN, 14)}px`,
+              height: `${heightPx}px`,
               background: colorFor(section.sectionId),
             }}
-            title={`${section.courseCode} ${formatMinutes(m.startMin)}–${formatMinutes(m.endMin)}${m.location ? ` · ${m.location}` : ''}`}
+            title={`${section.courseCode} ${formatMinutes(m.startMin)}–${formatMinutes(m.endMin)}${m.location ? ` · ${m.location}` : ''}${section.instructor ? ` · ${section.instructor}` : ''}${warn ? `\n⚠ ${warn.text}` : ''}${onEventClick ? '\nClick for details' : ''}`}
+            onClick={() => onEventClick?.(section, m)}
           >
+            {warn && (
+              <span class={`wdc-block-warn${warn.miss ? ' wdc-warn-miss' : ''}`} title={warn.text}>
+                ⚠
+              </span>
+            )}
             <div>{section.courseCode}</div>
             <div class="wdc-block-time">
               {formatMinutes(m.startMin)}–{formatMinutes(m.endMin)}
             </div>
+            {m.location && heightPx > 42 && <div class="wdc-block-room">📍 {m.location}</div>}
           </div>,
         );
       }

@@ -92,6 +92,24 @@ export interface RmpSchool {
   name: string;
 }
 
+// ---------- Campus map (building coordinates for walk-time warnings) ----------
+
+export interface CampusBuilding {
+  lat: number;
+  lng: number;
+  /** where the coordinates came from: free OSM geocoding, AI research, or the user */
+  source: 'osm' | 'ai' | 'manual';
+}
+
+export interface CampusMap {
+  /** school name the coordinates were resolved against; a change invalidates them */
+  school: string | null;
+  /** the school's own coordinates — geocoded once, bounds building searches to campus */
+  center?: { lat: number; lng: number };
+  /** building name (room stripped) -> coordinates */
+  buildings: Record<string, CampusBuilding>;
+}
+
 // ---------- Degree planner ----------
 
 export type RequirementRuleKind = 'all' | 'chooseN' | 'credits';
@@ -173,6 +191,8 @@ export interface Settings {
   /** owner-pinned level theme (1–10); unset = theme follows the real level.
    *  Only honored when admin is true — progress numbers always stay real. */
   themeLevel?: number;
+  /** walking speed for between-class route warnings, km/h (default 4.8) */
+  walkSpeedKmh?: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -248,6 +268,8 @@ export interface StorageShape {
   aiHistory: AiHistoryEntry[];
   /** manual requirement-group overrides: "degreeId::groupTitle" -> verdict or count */
   reqOverrides: Record<string, ReqOverrideValue>;
+  /** building coordinates for the campus map & walk-time warnings */
+  campusMap: CampusMap;
 }
 
 /**
@@ -270,4 +292,5 @@ export const STORAGE_DEFAULTS: StorageShape = {
   courseEquivalents: {},
   aiHistory: [],
   reqOverrides: {},
+  campusMap: { school: null, buildings: {} },
 };

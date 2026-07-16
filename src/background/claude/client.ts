@@ -702,3 +702,67 @@ export async function researchPrerequisites(
     'prereq-research',
   )) as PrereqResearch;
 }
+
+// ---------- Campus-map research (Pro+): building coordinates via web search ----------
+
+const MAP_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['buildings'],
+  properties: {
+    buildings: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['name', 'lat', 'lng'],
+        properties: {
+          name: { type: 'string', description: 'Building name exactly as given in the request' },
+          lat: { type: 'number' },
+          lng: { type: 'number' },
+        },
+      },
+    },
+  },
+} as const;
+
+const MAP_RESEARCH_SYSTEM = `You are a campus-geography researcher. Given campus building names and a school, find each building's precise latitude and longitude using the school's official campus map, OpenStreetMap, or other reliable sources. Coordinates must be of the building itself (not the town center). Skip buildings you cannot locate confidently — wrong coordinates are worse than none.`;
+
+export interface BuildingCoords {
+  name: string;
+  lat: number;
+  lng: number;
+}
+
+export async function researchBuildingCoords(
+  school: string,
+  buildings: string[],
+): Promise<BuildingCoords[]> {
+  const searchResp = await webResearchCall(
+    MAP_RESEARCH_SYSTEM,
+    `Find the latitude/longitude of these buildings at "${school}":\n${buildings
+      .map((b) => `- ${b}`)
+      .join('\n')}\nReport each building with its coordinates.`,
+    'The research response was cut off — try fewer buildings at once.',
+    'map-research',
+  );
+  const findings = searchResp.content
+    .filter((b) => b.type === 'text' && b.text)
+    .map((b) => b.text)
+    .join('\n')
+    .trim();
+  if (!findings) return [];
+
+  const result = (await callClaudeJson(
+    'Extract building coordinates from the research report into the structured format. Only include buildings whose coordinates the report states; use the building names exactly as they appear in the request list.',
+    `Request list:\n${buildings.map((b) => `- ${b}`).join('\n')}\n\nReport:\n${findings}`,
+    MAP_SCHEMA,
+    'The structured result was cut off — try fewer buildings at once.',
+    FAST_MODEL,
+    'map-research',
+  )) as { buildings: BuildingCoords[] };
+  // Guard against junk coordinates before they poison the map.
+  return result.buildings.filter(
+    (b) => Number.isFinite(b.lat) && Number.isFinite(b.lng) && Math.abs(b.lat) <= 90 && Math.abs(b.lng) <= 180,
+  );
+}
