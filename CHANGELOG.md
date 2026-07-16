@@ -28,9 +28,11 @@ All notable user-facing changes to the extension.
   medallions, sparkles, and a holographic finish — with a confetti celebration
   every time you level up. Only completed work counts, so the game can't be
   cheated by stacking planned courses. Click the XP bar for your **full
-  journey**: all 10 ranks, each shown in its own live theme, with a "try it"
-  preview that dresses your card in any rank's look (a costume — your real XP
-  never changes).
+  journey**: all 10 ranks, each shown in its own live theme, the XP rules
+  spelled out, and a "try it" preview that dresses your card in any rank's
+  look (a costume — your real XP never changes). From level 2 up, your rank's
+  color themes the **whole extension** — planner tabs and buttons, the
+  calendar panel, capture widget, and professor panel on Workday all wear it.
 
 ### Pro
 

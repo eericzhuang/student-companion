@@ -5,32 +5,43 @@
  * that plays once per newly reached level (tracked in plannerState.seenLevel).
  *
  * Clicking the XP bar opens the "journey" ladder: all 10 ranks, each row
- * dressed in its own tier theme. Every rank has a "try it" button that
- * temporarily previews that level's look on the hero card and header chip —
- * pure cosmetics, the real level never changes.
+ * dressed in its own tier theme, plus the XP rules. Every rank has a "try it"
+ * button that temporarily previews that level's look — pure cosmetics, the
+ * real level never changes. The owner (admin unlock) additionally gets a
+ * "use theme" button that pins a rank's theme permanently; progress numbers
+ * always stay real.
  */
 import { useEffect, useState } from 'preact/hooks';
 import type { PlannerState } from '../shared/types';
 import { sendToBackground } from '../background/messages';
-import { RANKS, type LevelInfo, type Rank } from './engine/levels';
+import {
+  RANKS,
+  XP_PER_COURSE,
+  XP_PER_DEGREE,
+  XP_PER_GROUP,
+  type LevelInfo,
+  type Rank,
+} from './engine/levels';
+
+const rankOf = (level: number): Rank => RANKS.find((r) => r.level === level) ?? RANKS[0]!;
 
 interface ChipProps {
   info: LevelInfo;
   /** rank being theme-previewed (from the journey ladder), if any */
   previewLevel?: number | null;
+  /** theme the UI wears (real level, or the owner-pinned one) */
+  themeLevel?: number;
 }
 
-export function LevelChip({ info, previewLevel }: ChipProps) {
-  const shown: Rank = RANKS.find((r) => r.level === previewLevel) ?? {
-    level: info.level,
-    title: info.title,
-    icon: info.icon,
-    at: 0,
-  };
-  const previewing = shown.level !== info.level || previewLevel != null;
+export function LevelChip({ info, previewLevel, themeLevel }: ChipProps) {
+  const previewing = previewLevel != null;
+  // Preview swaps the text too (that's the point); a pinned theme only
+  // changes the colors — the chip keeps telling the truth.
+  const shown = previewing ? rankOf(previewLevel) : rankOf(info.level);
+  const wear = previewing ? previewLevel : (themeLevel ?? info.level);
   return (
     <span
-      class={`pl-lv-chip pl-lv-${shown.level}${previewing ? ' pl-lv-previewing' : ''}`}
+      class={`pl-lv-chip pl-lv-${wear}${previewing ? ' pl-lv-previewing' : ''}`}
       title={previewing ? `Theme preview — you are really Level ${info.level} (${info.xp} XP)` : `${info.xp} XP — ${info.title}`}
     >
       {previewing && '🎭 '}
@@ -44,9 +55,25 @@ interface HeroProps {
   plannerState: PlannerState;
   previewLevel: number | null;
   onPreview: (level: number | null) => void;
+  /** theme the UI wears (real level, or the owner-pinned one) */
+  themeLevel: number;
+  /** owner mode: can pin any rank's theme */
+  isAdmin: boolean;
+  /** the owner's pinned theme level, if any */
+  pinnedTheme: number | null;
+  onPickTheme: (level: number | null) => void;
 }
 
-export function LevelHero({ info, plannerState, previewLevel, onPreview }: HeroProps) {
+export function LevelHero({
+  info,
+  plannerState,
+  previewLevel,
+  onPreview,
+  themeLevel,
+  isAdmin,
+  pinnedTheme,
+  onPickTheme,
+}: HeroProps) {
   const seen = plannerState.seenLevel;
   const [celebrating, setCelebrating] = useState(false);
   const [journeyOpen, setJourneyOpen] = useState(false);
@@ -66,25 +93,31 @@ export function LevelHero({ info, plannerState, previewLevel, onPreview }: HeroP
     persistSeen(info.level);
   };
 
-  const previewRank = RANKS.find((r) => r.level === previewLevel) ?? null;
-  const shownLevel = previewRank?.level ?? info.level;
+  const previewRank = previewLevel != null ? rankOf(previewLevel) : null;
+  const wearLevel = previewRank?.level ?? themeLevel;
   const shownIcon = previewRank?.icon ?? info.icon;
   const shownTitle = previewRank?.title ?? info.title;
+  const themedDifferently = !previewRank && themeLevel !== info.level;
 
   const { breakdown: b, next } = info;
 
   return (
     <>
-      <div class={`pl-card pl-lv-hero pl-lv-${shownLevel}${previewRank ? ' pl-lv-previewing' : ''}`}>
+      <div class={`pl-card pl-lv-hero pl-lv-${wearLevel}${previewRank ? ' pl-lv-previewing' : ''}`}>
         <div class="pl-lv-medal" style={{ '--lv-ring': previewRank ? '100%' : `${info.pct}%` }}>
           <span class="pl-lv-medal-inner">
-            <span class="pl-lv-num">{shownLevel}</span>
+            <span class="pl-lv-num">{previewRank?.level ?? info.level}</span>
           </span>
         </div>
         <div class="pl-lv-body">
           <div class="pl-lv-title">
             {shownIcon} {shownTitle}
             <span class="pl-lv-xp">{info.xp} XP</span>
+            {themedDifferently && (
+              <span class="pl-lv-theme-tag" title="Owner theme — colors only, your progress numbers are real">
+                🎨 {rankOf(themeLevel).title} theme
+              </span>
+            )}
           </div>
           {previewRank ? (
             <div class="pl-lv-preview-note">
@@ -98,7 +131,7 @@ export function LevelHero({ info, plannerState, previewLevel, onPreview }: HeroP
             <>
               <button
                 class="pl-lv-bar"
-                title="Click to see your full journey — every rank and its look"
+                title="Click to see your full journey — every rank, its look, and how XP works"
                 onClick={() => setJourneyOpen(!journeyOpen)}
               >
                 <div style={{ width: `${info.pct}%` }} />
@@ -112,7 +145,8 @@ export function LevelHero({ info, plannerState, previewLevel, onPreview }: HeroP
                   <span>Max rank reached — you are a legend. 🌟</span>
                 )}
                 <span class="pl-muted" title="Only completed work earns XP — planned courses don't count until you finish them">
-                  {b.courses} courses · {b.groups} requirements · {b.degrees} degree{b.degrees === 1 ? '' : 's'} done
+                  {b.courses} courses (+{b.courseXp} XP) · {b.groups} requirements (+{b.groupXp}) ·{' '}
+                  {b.degrees} degree{b.degrees === 1 ? '' : 's'} (+{b.degreeXp})
                   {' · '}
                   <button class="pl-link-inline" onClick={() => setJourneyOpen(!journeyOpen)}>
                     {journeyOpen ? 'hide journey' : '🗺 full journey'}
@@ -132,14 +166,29 @@ export function LevelHero({ info, plannerState, previewLevel, onPreview }: HeroP
               Close
             </button>
           </div>
+          <p class="pl-lv-xprules">
+            <b>How XP is earned:</b> +{XP_PER_COURSE} per completed course · +{XP_PER_GROUP} per
+            requirement group you finish · +{XP_PER_DEGREE} per completed degree. A course that counts
+            toward several degrees earns XP in each one — and only <b>completed</b> work counts, so
+            planned courses move your requirement bars but never your level.
+          </p>
           <p class="pl-muted">
-            Each rank restyles your level card — the higher, the fancier. Hit <b>👀 try it</b> on any
-            rank to see yourself at that level (a costume, not a shortcut — your real XP never changes).
+            Each rank restyles the whole extension — the higher, the fancier. Hit <b>👀 try it</b> on
+            any rank to see yourself at that level (a costume, not a shortcut — your real XP never
+            changes).
+            {isAdmin && (
+              <>
+                {' '}
+                As the owner you can also <b>🎨 use</b> any rank's theme permanently — your progress
+                numbers stay real.
+              </>
+            )}
           </p>
           {RANKS.map((r) => {
             const reached = info.xp >= r.at;
             const current = r.level === info.level;
             const previewing = previewLevel === r.level;
+            const pinned = pinnedTheme === r.level;
             return (
               <div class={`pl-lv-jrow pl-lv-${r.level}${current ? ' current' : ''}`}>
                 <span class="pl-lv-jmedal">{r.level}</span>
@@ -152,6 +201,15 @@ export function LevelHero({ info, plannerState, previewLevel, onPreview }: HeroP
                   {!reached && !current && <span class="pl-muted"> · {r.at - info.xp} to go 🔒</span>}
                   {reached && !current && ' · ✓ reached'}
                 </span>
+                {isAdmin && (
+                  <button
+                    class={`pl-lv-jtry${pinned ? ' active' : ''}`}
+                    title={pinned ? 'Stop using this theme (follow your real level again)' : 'Wear this rank\'s theme everywhere — progress numbers stay real'}
+                    onClick={() => onPickTheme(pinned ? null : r.level)}
+                  >
+                    {pinned ? '🎨 my theme ✓' : '🎨 use'}
+                  </button>
+                )}
                 <button
                   class={`pl-lv-jtry${previewing ? ' active' : ''}`}
                   onClick={() => onPreview(previewing ? null : r.level)}

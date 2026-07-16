@@ -22,7 +22,7 @@ import {
   scopeReqOverrides,
   type GroupEvaluation,
 } from './engine/requirements';
-import { computeLevel } from './engine/levels';
+import { computeLevel, effectiveThemeLevel } from './engine/levels';
 import { LevelChip, LevelHero } from './LevelHero';
 import { DegreeImport } from './DegreeImport';
 import { ReviewEditor } from './ReviewEditor';
@@ -208,6 +208,10 @@ function App() {
 
   const { degrees, states, evaluations } = derived;
   const levelInfo = degrees.length > 0 ? computeLevel(evaluations, states) : null;
+  // Theme the UI wears: preview wins, then the owner-pinned theme, then the
+  // real level. Level 1 keeps the standard look.
+  const themeLv = levelInfo ? effectiveThemeLevel(levelInfo.level, store.settings) : 1;
+  const uiLv = previewLevel ?? themeLv;
 
   const onPlannerStateChange = (next: PlannerState) =>
     setStore({ ...store, plannerState: next });
@@ -261,7 +265,8 @@ function App() {
   const pro = isPro(store.settings);
   const supreme = isSupreme(store.settings);
   // Animations & flair are a Pro perk — the pl-pro class unlocks them in CSS.
-  const shellClass = `pl-shell${pro ? ' pl-pro' : ''}`;
+  // Level themes color the whole planner from level 2 up (level 1 = standard).
+  const shellClass = `pl-shell${pro ? ' pl-pro' : ''}${levelInfo && uiLv > 1 ? ` pl-themed pl-lv-${uiLv}` : ''}`;
   const planBadge = supreme ? (
     <span class="pl-pro-badge supreme">👑 SUPREME</span>
   ) : pro ? (
@@ -294,7 +299,7 @@ function App() {
       <div class="pl-header">
         <h1>
           🎓 Degree Planner {planBadge}
-          {levelInfo && <LevelChip info={levelInfo} previewLevel={previewLevel} />}
+          {levelInfo && <LevelChip info={levelInfo} previewLevel={previewLevel} themeLevel={themeLv} />}
         </h1>
         <div class="pl-row">
           <span class="pl-muted">
@@ -340,6 +345,12 @@ function App() {
               plannerState={store.plannerState}
               previewLevel={previewLevel}
               onPreview={setPreviewLevel}
+              themeLevel={themeLv}
+              isAdmin={store.settings.admin}
+              pinnedTheme={store.settings.admin ? store.settings.themeLevel ?? null : null}
+              onPickTheme={(level) =>
+                void sendToBackground({ kind: 'SETTINGS_UPDATE', patch: { themeLevel: level ?? undefined } })
+              }
             />
           )}
           <div class="pl-legend">

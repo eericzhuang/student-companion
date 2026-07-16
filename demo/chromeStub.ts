@@ -43,6 +43,9 @@ const chromeStub = {
         case 'PANEL_STATE_UPDATE':
           store.settings = { ...(store.settings as object), panelState: req.panelState };
           return { ok: true };
+        case 'SETTINGS_UPDATE':
+          write('settings', { ...(store.settings as object), ...(req.patch as object) });
+          return { ok: true };
         case 'PLANNER_STATE_UPDATE':
           write('plannerState', req.state);
           return { ok: true };

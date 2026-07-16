@@ -170,6 +170,9 @@ export interface Settings {
   /** Stripe activation code (checkout session id) once real billing is live;
    *  re-verified daily against the billing backend */
   licenseToken: string | null;
+  /** owner-pinned level theme (1–10); unset = theme follows the real level.
+   *  Only honored when admin is true — progress numbers always stay real. */
+  themeLevel?: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildCourseStates, evaluateDegree } from '../src/planner/engine/requirements';
 import {
   computeLevel,
+  effectiveThemeLevel,
   RANKS,
   XP_PER_COURSE,
   XP_PER_DEGREE,
@@ -92,5 +93,18 @@ describe('level-up game (computeLevel)', () => {
   it('rank thresholds are strictly increasing and start at 0', () => {
     expect(RANKS[0]!.at).toBe(0);
     for (let i = 1; i < RANKS.length; i++) expect(RANKS[i]!.at).toBeGreaterThan(RANKS[i - 1]!.at);
+  });
+
+  it('ranks 7 and 8 carry the English names', () => {
+    expect(RANKS[6]!.title).toBe("Dean's List");
+    expect(RANKS[7]!.title).toBe('Distinguished Scholar');
+  });
+
+  it('owner theme pin: admin-only, in-range, colors never change the level itself', () => {
+    expect(effectiveThemeLevel(3, { admin: false, themeLevel: 10 })).toBe(3); // non-admin ignored
+    expect(effectiveThemeLevel(3, { admin: true, themeLevel: 10 })).toBe(10); // owner pins
+    expect(effectiveThemeLevel(3, { admin: true })).toBe(3); // no pin = follow real level
+    expect(effectiveThemeLevel(3, { admin: true, themeLevel: 99 })).toBe(3); // out of range
+    expect(effectiveThemeLevel(3, { admin: true, themeLevel: 0 })).toBe(3);
   });
 });

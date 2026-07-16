@@ -10,6 +10,7 @@ import { openRmpPopover } from '../src/content/ui/RmpPopover';
 import { CaptureWidget } from '../src/content/ui/CaptureWidget';
 import { RmpAllPanel } from '../src/content/ui/RmpAllPanel';
 import { currentPageSignal, rmpPanelSignal } from '../src/content/ui/captureState';
+import { themeRoot } from '../src/content/ui/theme';
 import { DegreeImport } from '../src/planner/DegreeImport';
 import { findConflicts } from '../src/shared/time';
 import {
@@ -288,4 +289,6 @@ function Demo() {
   );
 }
 
-render(<Demo />, document.getElementById('app')!);
+const appEl = document.getElementById('app')!;
+themeRoot(appEl); // level theme paints --wdc-accent here, like on Workday
+render(<Demo />, appEl);

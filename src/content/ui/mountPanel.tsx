@@ -9,6 +9,7 @@ import { CalendarPanel } from './CalendarPanel';
 import { CaptureWidget } from './CaptureWidget';
 import { RmpAllPanel } from './RmpAllPanel';
 import cssText from './styles.css?inline';
+import { themeRoot } from './theme';
 
 const HOST_ID = 'wdc-panel-host';
 const CAPTURE_HOST_ID = 'wdc-capture-host';
@@ -39,6 +40,7 @@ function makeHost(id: string, node: ComponentChild): HTMLElement {
   shadow.appendChild(root);
   document.documentElement.appendChild(el);
   isolate(el);
+  themeRoot(root); // level theme: paints --wdc-accent, follows storage changes
   render(node, root);
   return el;
 }

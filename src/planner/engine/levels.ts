@@ -21,22 +21,37 @@ export interface Rank {
   icon: string;
   /** cumulative XP needed to reach this level */
   at: number;
+  /** UI accent color for this tier (kept in sync with the pl-lv-N CSS map) */
+  accent: string;
 }
 
 // Early levels come fast (the hook); the last ones need a nearly finished
 // double major. Tuned against ~10 XP/course, ~40/group, 200/degree.
 export const RANKS: Rank[] = [
-  { level: 1, title: 'Novice', icon: '🌱', at: 0 },
-  { level: 2, title: 'Apprentice', icon: '📖', at: 40 },
-  { level: 3, title: 'Junior Scholar', icon: '✏️', at: 100 },
-  { level: 4, title: 'Scholar', icon: '🎓', at: 180 },
-  { level: 5, title: 'Senior Scholar', icon: '📜', at: 300 },
-  { level: 6, title: 'Honors Scholar', icon: '🏅', at: 460 },
-  { level: 7, title: 'Magna Cum Laude', icon: '🏆', at: 680 },
-  { level: 8, title: 'Summa Cum Laude', icon: '💎', at: 980 },
-  { level: 9, title: 'Valedictorian', icon: '👑', at: 1380 },
-  { level: 10, title: 'Academic Legend', icon: '🌟', at: 1900 },
+  { level: 1, title: 'Novice', icon: '🌱', at: 0, accent: '#64748b' },
+  { level: 2, title: 'Apprentice', icon: '📖', at: 40, accent: '#0284c7' },
+  { level: 3, title: 'Junior Scholar', icon: '✏️', at: 100, accent: '#0d9488' },
+  { level: 4, title: 'Scholar', icon: '🎓', at: 180, accent: '#16a34a' },
+  { level: 5, title: 'Senior Scholar', icon: '📜', at: 300, accent: '#7c3aed' },
+  { level: 6, title: 'Honors Scholar', icon: '🏅', at: 460, accent: '#b45309' },
+  { level: 7, title: "Dean's List", icon: '🏆', at: 680, accent: '#b45309' },
+  { level: 8, title: 'Distinguished Scholar', icon: '💎', at: 980, accent: '#0369a1' },
+  { level: 9, title: 'Valedictorian', icon: '👑', at: 1380, accent: '#7e22ce' },
+  { level: 10, title: 'Academic Legend', icon: '🌟', at: 1900, accent: '#be185d' },
 ];
+
+/**
+ * The theme level the UI should wear: normally your real level; the owner
+ * (admin unlock) can pin any rank's theme instead. Progress numbers always
+ * stay real — a theme is a coat of paint, never a claim.
+ */
+export function effectiveThemeLevel(
+  realLevel: number,
+  settings: { admin?: boolean; themeLevel?: number },
+): number {
+  const pinned = settings.admin ? settings.themeLevel : undefined;
+  return pinned && pinned >= 1 && pinned <= RANKS.length ? Math.floor(pinned) : realLevel;
+}
 
 export interface LevelInfo {
   xp: number;

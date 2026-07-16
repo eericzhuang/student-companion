@@ -973,12 +973,18 @@ table.pl-table th { color: #475569; font-size: 12px; }
     -webkit-text-fill-color: transparent;
     animation: plLvShimmer 3s linear infinite;
   }
-  /* the XP pill sits inside the clipped title — restore its own text color */
+  /* pills inside the clipped title — restore their own text colors */
   .pl-lv-hero .pl-lv-title .pl-lv-xp {
     background: #f1f5f9;
     -webkit-background-clip: border-box;
     background-clip: border-box;
     -webkit-text-fill-color: #475569;
+  }
+  .pl-lv-hero .pl-lv-title .pl-lv-theme-tag {
+    background: #fff;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+    -webkit-text-fill-color: var(--lv-color, #475569);
   }
   /* 7+: the medallion breathes light */
   .pl-lv-hero.pl-lv-7 .pl-lv-medal, .pl-lv-hero.pl-lv-8 .pl-lv-medal,
@@ -1136,3 +1142,46 @@ table.pl-table th { color: #475569; font-size: 12px; }
 /* theme-preview mode: dashed frame + note so it can't be mistaken for real */
 .pl-lv-previewing { outline: 2px dashed #94a3b8; outline-offset: 2px; }
 .pl-lv-preview-note { margin-top: 8px; font-size: 12.5px; color: #475569; }
+
+/* --- whole-planner level theme: shell wears the (real or owner-pinned)
+   rank color from level 2 up. Hero/journey/chip keep their own tier looks
+   because their pl-lv-N class re-declares --lv-color locally. --- */
+.pl-shell.pl-themed .pl-tab.active { background: var(--lv-color); }
+.pl-shell.pl-pro.pl-themed .pl-tab.active {
+  background: linear-gradient(
+    115deg,
+    var(--lv-color),
+    color-mix(in srgb, var(--lv-color) 55%, #312e81) 55%,
+    var(--lv-color)
+  );
+  background-size: 220% 220%;
+}
+.pl-shell.pl-themed button.pl-btn:not(.secondary):not(.danger) { background: var(--lv-color); }
+.pl-shell.pl-themed .pl-link-inline { color: var(--lv-color); }
+.pl-shell.pl-themed .pl-card:not(.pl-lv-hero):not(.pl-lv-journey) {
+  border-top: 3px solid color-mix(in srgb, var(--lv-color) 55%, #fff);
+}
+.pl-shell.pl-themed .pl-chat-turn.user .pl-chat-bubble { background: var(--lv-color); }
+.pl-shell.pl-themed .pl-degree-tag {
+  background: color-mix(in srgb, var(--lv-color) 12%, #fff);
+  color: var(--lv-color);
+}
+
+/* owner theme tag + XP rules in the journey */
+.pl-lv-theme-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px dashed var(--lv-color, #94a3b8);
+  color: var(--lv-color, #475569);
+  background: #fff;
+}
+.pl-lv-xprules {
+  font-size: 12.5px;
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+}

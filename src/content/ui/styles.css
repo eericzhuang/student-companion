@@ -44,7 +44,7 @@
   right: 16px;
   top: 80px;
   z-index: 2147483000;
-  background: #7c2d92;
+  background: var(--wdc-accent, #7c2d92);
   color: #fff;
   border-radius: 999px;
   padding: 8px 14px;
@@ -84,7 +84,7 @@
 .wdc-rmp-link {
   display: inline-block;
   margin: 4px 0;
-  color: #0f4c81;
+  color: var(--wdc-accent, #0f4c81);
   font-size: 11px;
   text-decoration: underline;
 }
@@ -105,7 +105,7 @@
 }
 
 .wdc-rmp-add button {
-  background: #7c2d92;
+  background: var(--wdc-accent, #7c2d92);
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -144,7 +144,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 7px 12px;
-  background: #0f766e;
+  background: var(--wdc-accent, #0f766e);
   color: #fff;
   font-weight: 600;
   font-size: 12.5px;
@@ -171,7 +171,7 @@
 
 .wdc-capture-ready {
   padding: 8px 12px 4px;
-  color: #0f766e;
+  color: var(--wdc-accent, #0f766e);
   font-weight: 600;
 }
 
@@ -186,7 +186,7 @@
   width: calc(100% - 24px);
   margin: 4px 12px 10px;
   padding: 8px;
-  background: #0f766e;
+  background: var(--wdc-accent, #0f766e);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -196,7 +196,7 @@
 }
 
 .wdc-capture-btn:hover {
-  background: #0d5f58;
+  background: color-mix(in srgb, var(--wdc-accent, #0f766e) 82%, #000);
 }
 
 .wdc-capture-toast {
@@ -315,7 +315,7 @@
 .wdc-capture-link {
   background: none;
   border: none;
-  color: #0f766e;
+  color: var(--wdc-accent, #0f766e);
   cursor: pointer;
   font-size: 11px;
   padding: 0;
@@ -346,7 +346,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #0f766e;
+  background: var(--wdc-accent, #0f766e);
   color: #fff;
   display: flex;
   align-items: center;
@@ -383,7 +383,7 @@
 
 /* header becomes a slowly drifting teal-emerald gradient */
 .wdc-capture.wdc-pro .wdc-capture-head {
-  background: linear-gradient(115deg, #0f766e, #059669 55%, #0f766e);
+  background: linear-gradient(115deg, var(--wdc-accent, #0f766e), #059669 55%, var(--wdc-accent, #0f766e));
   background-size: 220% 220%;
   animation: wdcAuraSweep 5s ease infinite;
 }
@@ -422,7 +422,7 @@
 
 /* header drifts through a blue→indigo gradient */
 .wdc-panel.wdc-pro .wdc-panel-header {
-  background: linear-gradient(115deg, #0f4c81, #4338ca 55%, #0f4c81);
+  background: linear-gradient(115deg, var(--wdc-accent, #0f4c81), #4338ca 55%, var(--wdc-accent, #0f4c81));
   background-size: 220% 220%;
   animation: wdcAuraSweep 5s ease infinite;
 }
@@ -447,12 +447,12 @@
 /* ---- Pro-only RMP-panel animations ---- */
 
 /* base header color lives here (not inline) so the Pro gradient can override */
-.wdc-rmp-panel .wdc-panel-header { background: #7c2d92; }
+.wdc-rmp-panel .wdc-panel-header { background: var(--wdc-accent, #7c2d92); }
 
 .wdc-rmp-panel.wdc-pro { animation: wdcFadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
 .wdc-rmp-panel.wdc-pro .wdc-panel-header {
-  background: linear-gradient(115deg, #7c2d92, #c026d3 55%, #7c2d92);
+  background: linear-gradient(115deg, var(--wdc-accent, #7c2d92), #c026d3 55%, var(--wdc-accent, #7c2d92));
   background-size: 220% 220%;
   animation: wdcAuraSweep 5s ease infinite;
 }
@@ -509,7 +509,7 @@
   justify-content: space-between;
   gap: 8px;
   padding: 8px 12px;
-  background: #0f4c81;
+  background: var(--wdc-accent, #0f4c81);
   color: #fff;
   cursor: grab;
   user-select: none;
@@ -559,7 +559,7 @@
 }
 
 .wdc-view-toggle button.active {
-  background: #0f4c81;
+  background: var(--wdc-accent, #0f4c81);
   color: #fff;
 }
 
@@ -620,7 +620,7 @@
 
 .wdc-edit-add-title {
   font-weight: 600;
-  color: #0f4c81;
+  color: var(--wdc-accent, #0f4c81);
   margin-bottom: 4px;
 }
 
@@ -656,7 +656,7 @@
 .wdc-freetime-label {
   flex: 0 0 34px;
   font-weight: 700;
-  color: #0f4c81;
+  color: var(--wdc-accent, #0f4c81);
 }
 
 .wdc-freetime-slots {
@@ -682,7 +682,7 @@
 .wdc-collapsed-pill {
   position: fixed;
   z-index: 2147483000;
-  background: #0f4c81;
+  background: var(--wdc-accent, #0f4c81);
   color: #fff;
   border-radius: 999px;
   padding: 8px 14px;
@@ -880,7 +880,7 @@
 .wdc-link-btn {
   background: none;
   border: none;
-  color: #0f4c81;
+  color: var(--wdc-accent, #0f4c81);
   cursor: pointer;
   font-size: 11px;
   padding: 0;
