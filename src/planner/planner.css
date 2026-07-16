@@ -888,11 +888,22 @@ table.pl-table th { color: #475569; font-size: 12px; }
   color: #475569;
 }
 .pl-lv-bar {
+  /* it's a button: click opens the journey ladder */
+  display: block;
+  width: 100%;
+  border: 0;
+  padding: 0;
   height: 10px;
   margin: 8px 0 6px;
   border-radius: 999px;
   background: #e2e8f0;
   overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.pl-lv-bar:hover {
+  transform: scaleY(1.25);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--lv-color, #64748b) 35%, transparent);
 }
 .pl-lv-bar > div {
   height: 100%;
@@ -922,13 +933,13 @@ table.pl-table th { color: #475569; font-size: 12px; }
 .pl-lv-10 { --lv-color: #be185d; border-color: transparent; }    /* legend */
 
 /* tinted backgrounds from level 4 up */
-.pl-lv-hero.pl-lv-4, .pl-lv-chip.pl-lv-4 { background: linear-gradient(120deg, #f0fdf4, #fff); }
-.pl-lv-hero.pl-lv-5, .pl-lv-chip.pl-lv-5 { background: linear-gradient(120deg, #f5f3ff, #fff); }
-.pl-lv-hero.pl-lv-6, .pl-lv-chip.pl-lv-6,
-.pl-lv-hero.pl-lv-7, .pl-lv-chip.pl-lv-7 { background: linear-gradient(120deg, #fffbeb, #fef3c7, #fffbeb); }
-.pl-lv-hero.pl-lv-8, .pl-lv-chip.pl-lv-8 { background: linear-gradient(120deg, #f0f9ff, #e0f2fe, #f0f9ff); }
-.pl-lv-hero.pl-lv-9, .pl-lv-chip.pl-lv-9 { background: linear-gradient(120deg, #faf5ff, #f3e8ff, #faf5ff); }
-.pl-lv-hero.pl-lv-10, .pl-lv-chip.pl-lv-10 {
+.pl-lv-hero.pl-lv-4, .pl-lv-chip.pl-lv-4, .pl-lv-jrow.pl-lv-4 { background: linear-gradient(120deg, #f0fdf4, #fff); }
+.pl-lv-hero.pl-lv-5, .pl-lv-chip.pl-lv-5, .pl-lv-jrow.pl-lv-5 { background: linear-gradient(120deg, #f5f3ff, #fff); }
+.pl-lv-hero.pl-lv-6, .pl-lv-chip.pl-lv-6, .pl-lv-jrow.pl-lv-6,
+.pl-lv-hero.pl-lv-7, .pl-lv-chip.pl-lv-7, .pl-lv-jrow.pl-lv-7 { background: linear-gradient(120deg, #fffbeb, #fef3c7, #fffbeb); }
+.pl-lv-hero.pl-lv-8, .pl-lv-chip.pl-lv-8, .pl-lv-jrow.pl-lv-8 { background: linear-gradient(120deg, #f0f9ff, #e0f2fe, #f0f9ff); }
+.pl-lv-hero.pl-lv-9, .pl-lv-chip.pl-lv-9, .pl-lv-jrow.pl-lv-9 { background: linear-gradient(120deg, #faf5ff, #f3e8ff, #faf5ff); }
+.pl-lv-hero.pl-lv-10, .pl-lv-chip.pl-lv-10, .pl-lv-jrow.pl-lv-10 {
   background:
     linear-gradient(#fff, #fff) padding-box,
     linear-gradient(90deg, #f472b6, #fbbf24, #34d399, #60a5fa, #a78bfa, #f472b6) border-box;
@@ -951,7 +962,10 @@ table.pl-table th { color: #475569; font-size: 12px; }
   /* 6+: gold shimmer sweeping across the title */
   .pl-lv-hero.pl-lv-6 .pl-lv-title, .pl-lv-hero.pl-lv-7 .pl-lv-title,
   .pl-lv-hero.pl-lv-8 .pl-lv-title, .pl-lv-hero.pl-lv-9 .pl-lv-title,
-  .pl-lv-hero.pl-lv-10 .pl-lv-title {
+  .pl-lv-hero.pl-lv-10 .pl-lv-title,
+  .pl-lv-jrow.pl-lv-6 .pl-lv-jtitle, .pl-lv-jrow.pl-lv-7 .pl-lv-jtitle,
+  .pl-lv-jrow.pl-lv-8 .pl-lv-jtitle, .pl-lv-jrow.pl-lv-9 .pl-lv-jtitle,
+  .pl-lv-jrow.pl-lv-10 .pl-lv-jtitle {
     background: linear-gradient(90deg, var(--lv-color) 40%, #fff 50%, var(--lv-color) 60%);
     background-size: 200% 100%;
     -webkit-background-clip: text;
@@ -968,11 +982,14 @@ table.pl-table th { color: #475569; font-size: 12px; }
   }
   /* 7+: the medallion breathes light */
   .pl-lv-hero.pl-lv-7 .pl-lv-medal, .pl-lv-hero.pl-lv-8 .pl-lv-medal,
-  .pl-lv-hero.pl-lv-9 .pl-lv-medal, .pl-lv-hero.pl-lv-10 .pl-lv-medal {
+  .pl-lv-hero.pl-lv-9 .pl-lv-medal, .pl-lv-hero.pl-lv-10 .pl-lv-medal,
+  .pl-lv-jrow.pl-lv-7 .pl-lv-jmedal, .pl-lv-jrow.pl-lv-8 .pl-lv-jmedal,
+  .pl-lv-jrow.pl-lv-9 .pl-lv-jmedal, .pl-lv-jrow.pl-lv-10 .pl-lv-jmedal {
     animation: plLvGlow 2.6s ease-in-out infinite;
   }
   /* 9+: floating sparkles rise out of the card */
-  .pl-lv-hero.pl-lv-9::after, .pl-lv-hero.pl-lv-10::after {
+  .pl-lv-hero.pl-lv-9::after, .pl-lv-hero.pl-lv-10::after,
+  .pl-lv-jrow.pl-lv-9::after, .pl-lv-jrow.pl-lv-10::after {
     content: '✦ ✧ ✦';
     position: absolute;
     right: 18px;
@@ -984,7 +1001,7 @@ table.pl-table th { color: #475569; font-size: 12px; }
     pointer-events: none;
   }
   /* 10: the whole card slowly cycles through the spectrum */
-  .pl-lv-hero.pl-lv-10, .pl-lv-chip.pl-lv-10 { animation: plLvHue 8s linear infinite; }
+  .pl-lv-hero.pl-lv-10, .pl-lv-chip.pl-lv-10, .pl-lv-jrow.pl-lv-10 { animation: plLvHue 8s linear infinite; }
 }
 
 /* --- level-up celebration overlay --- */
@@ -1064,3 +1081,58 @@ table.pl-table th { color: #475569; font-size: 12px; }
 .pl-lv-confetti i:nth-child(22) { left: 89%; animation-delay: 2s; }
 .pl-lv-confetti i:nth-child(23) { left: 93%; animation-delay: 0.95s; }
 .pl-lv-confetti i:nth-child(24) { left: 97%; animation-delay: 1.5s; }
+
+/* --- journey ladder (click the XP bar): all 10 ranks, each in its own look --- */
+.pl-lv-jrow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  margin-top: 8px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.pl-lv-jrow.current { outline: 2px solid var(--lv-color); outline-offset: 1px; }
+.pl-lv-jmedal {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--lv-color, #64748b);
+  background: #fff;
+  border: 2.5px solid var(--lv-color, #cbd5e1);
+}
+.pl-lv-jtitle { font-weight: 800; font-size: 14px; color: var(--lv-color, #334155); min-width: 170px; }
+.pl-lv-jxp { flex: 1; font-size: 12.5px; color: #475569; }
+.pl-lv-jyou {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: var(--lv-color);
+  color: #fff;
+}
+.pl-lv-jtry {
+  flex: 0 0 auto;
+  border: 1.5px solid var(--lv-color, #cbd5e1);
+  background: #fff;
+  color: var(--lv-color, #475569);
+  border-radius: 999px;
+  padding: 3px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pl-lv-jtry:hover { background: var(--lv-color); color: #fff; }
+.pl-lv-jtry.active { background: var(--lv-color); color: #fff; }
+
+/* theme-preview mode: dashed frame + note so it can't be mistaken for real */
+.pl-lv-previewing { outline: 2px dashed #94a3b8; outline-offset: 2px; }
+.pl-lv-preview-note { margin-top: 8px; font-size: 12.5px; color: #475569; }

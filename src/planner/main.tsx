@@ -153,6 +153,8 @@ function App() {
   const [store, setStore] = useState<StorageShape | null>(null);
   const [tab, setTab] = useState<Tab>('progress');
   const [review, setReview] = useState<PendingReview | null>(null);
+  // Level-theme preview from the journey ladder (cosmetic only, never stored).
+  const [previewLevel, setPreviewLevel] = useState<number | null>(null);
 
   const reload = () => void getAllStored().then(setStore);
 
@@ -292,7 +294,7 @@ function App() {
       <div class="pl-header">
         <h1>
           🎓 Degree Planner {planBadge}
-          {levelInfo && <LevelChip info={levelInfo} />}
+          {levelInfo && <LevelChip info={levelInfo} previewLevel={previewLevel} />}
         </h1>
         <div class="pl-row">
           <span class="pl-muted">
@@ -332,7 +334,14 @@ function App() {
 
       {tab === 'progress' && (
         <>
-          {levelInfo && <LevelHero info={levelInfo} plannerState={store.plannerState} />}
+          {levelInfo && (
+            <LevelHero
+              info={levelInfo}
+              plannerState={store.plannerState}
+              previewLevel={previewLevel}
+              onPreview={setPreviewLevel}
+            />
+          )}
           <div class="pl-legend">
             <span>✅ satisfied</span>
             <span>🕐 partially done</span>
