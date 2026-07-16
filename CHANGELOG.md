@@ -6,6 +6,8 @@ All notable user-facing changes to the extension.
 
 ### Free
 
+- **Beginner guide**: a one-minute tour of every module that walks through the
+  real tabs — auto-plays on first visit, replayable anytime from ❓ Guide.
 - **Live schedule calendar** on Find Course Sections and saved-schedule pages:
   draggable/resizable week grid, conflict highlighting, free-time list view,
   manual add/remove/rename of sections.
@@ -37,7 +39,9 @@ All notable user-facing changes to the extension.
 ### Pro
 
 - **AI Semester Advisor** — chat with an AI that knows your degrees, history,
-  and schedule; uses live web search.
+  and schedule; uses live web search. When it suggests a plan, save the
+  courses you like straight to the Semester board (you pick which, and the
+  term).
 - **AI transcript parsing** and **AI degree-catalog parsing** (more accurate
   than the rule-based fallback).
 - AI history log, animated Pro UI.

@@ -88,8 +88,21 @@ export function PlannerBoard({ degrees, states, terms, plannerState, prereqOverr
 
   const coursesForTerm = (term: TermConfig): RequirementCourse[] => {
     const pinned = remaining.filter((c) => plannerState.assignments[c.code] === term.id);
+    // Assigned courses that aren't in the remaining-requirements list (AI
+    // Advisor plans, what-if commits of electives, free choices) still belong
+    // on the board — render them as plain cards so no saved plan goes invisible.
+    const known = new Set(remaining.map((c) => normalizeCode(c.code)));
+    const extras: RequirementCourse[] = Object.entries(plannerState.assignments)
+      .filter(
+        ([code, tid]) =>
+          tid === term.id &&
+          !known.has(normalizeCode(code)) &&
+          !states.completed.has(normalizeCode(code)) &&
+          !states.inProgress.has(normalizeCode(code)),
+      )
+      .map(([code]) => ({ code, title: '', credits: null, prereqCodes: [] }));
     const suggested = suggestion.terms.find((t) => t.term.id === term.id)?.courses ?? [];
-    return [...pinned, ...suggested];
+    return [...pinned, ...extras, ...suggested];
   };
 
   const drop = (termId: string) => {

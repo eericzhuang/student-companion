@@ -202,6 +202,8 @@ export interface PlannerState {
   whatIfCourses?: string[];
   /** highest level the level-up celebration has already played for */
   seenLevel?: number;
+  /** the beginner guide was completed or skipped — don't auto-open it again */
+  guideSeen?: boolean;
 }
 
 // ---------- AI history ----------

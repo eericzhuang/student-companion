@@ -7,10 +7,10 @@
  */
 import { signal } from '@preact/signals';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import type { ReqOverrideValue, StoredDegree, TermConfig } from '../shared/types';
+import type { PlannerState, ReqOverrideValue, StoredDegree, TermConfig } from '../shared/types';
 import { sendToBackground, type ChatResult } from '../background/messages';
 import { buildSchedulingPlan } from './engine/plan';
-import { evaluateDegree, normalizeCode, scopeReqOverrides, type CourseStates } from './engine/requirements';
+import { evaluateDegree, normalizeCode, scopeReqOverrides, stateOf, type CourseStates } from './engine/requirements';
 import { aiLaneFullMessage, aiLaneOpen, enterAiLane, leaveAiLane } from './aiLock';
 
 interface Props {
@@ -20,9 +20,25 @@ interface Props {
   prereqOverrides: Record<string, string[]>;
   courseEquivalents: Record<string, string[]>;
   reqOverrides: Record<string, ReqOverrideValue>;
+  plannerState: PlannerState;
   isPro: boolean;
   /** Supreme gets the priority AI lane: several concurrent requests. */
   isSupreme: boolean;
+}
+
+/** Course codes mentioned in an advisor reply that the student could still
+ *  plan (not completed, in progress, or already on the board). */
+function plannableCodes(text: string, states: CourseStates): string[] {
+  const raw = text.match(/\b[A-Z]{2,6}[ -]?\d{3,5}[A-Z]?\b/g) ?? [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const r of raw) {
+    const code = normalizeCode(r);
+    if (!/^[A-Z]{2,6} \d{3,5}[A-Z]?$/.test(code) || seen.has(code)) continue;
+    seen.add(code);
+    if (stateOf(code, states) === 'none') out.push(code);
+  }
+  return out;
 }
 
 interface ChatTurn {
@@ -207,6 +223,14 @@ export function AiAdvisor(props: Props) {
               <div class="pl-chat-thinking">{turn.thinking}</div>
             )}
             <div class="pl-chat-bubble">{renderMarkish(turn.content)}</div>
+            {turn.role === 'assistant' && (
+              <SavePlan
+                text={turn.content}
+                states={props.states}
+                terms={props.terms}
+                plannerState={props.plannerState}
+              />
+            )}
           </div>
         ))}
         {busy && (
@@ -240,6 +264,95 @@ export function AiAdvisor(props: Props) {
       <p class="pl-muted" style={{ fontSize: '11px', marginTop: '4px' }}>
         AI guidance — verify against your official degree audit before registering.
       </p>
+    </div>
+  );
+}
+
+/**
+ * "Save this plan": when an advisor reply mentions courses the student hasn't
+ * taken or planned yet, offer to pin them to a term on the Semester board.
+ * The student picks which courses and which term — nothing is saved silently.
+ */
+function SavePlan({
+  text,
+  states,
+  terms,
+  plannerState,
+}: {
+  text: string;
+  states: CourseStates;
+  terms: TermConfig[];
+  plannerState: PlannerState;
+}) {
+  const codes = plannableCodes(text, states);
+  const [open, setOpen] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [termId, setTermId] = useState(terms[0]?.id ?? '');
+  const [savedMsg, setSavedMsg] = useState<string | null>(null);
+
+  // Saved courses become "planned" and drop out of `codes` — keep showing the
+  // confirmation even once the list is empty.
+  if (terms.length === 0 || (codes.length === 0 && !savedMsg)) return null;
+
+  const toggle = (code: string) =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(code)) next.delete(code);
+      else next.add(code);
+      return next;
+    });
+
+  const save = () => {
+    const sel = codes.filter((c) => picked.has(c));
+    if (sel.length === 0) return;
+    const assignments = { ...plannerState.assignments };
+    for (const c of sel) assignments[c] = termId;
+    void sendToBackground({ kind: 'PLANNER_STATE_UPDATE', state: { ...plannerState, assignments } });
+    const label = terms.find((t) => t.id === termId)?.label ?? termId;
+    setSavedMsg(`✅ Added ${sel.length} course${sel.length === 1 ? '' : 's'} to ${label} — they're on your Semester board now.`);
+    setOpen(false);
+  };
+
+  return (
+    <div class="pl-advisor-save">
+      {savedMsg && <div class="pl-advisor-saved">{savedMsg}</div>}
+      {!open && codes.length > 0 && (
+        <button
+          class="pl-link-inline"
+          onClick={() => {
+            setPicked(new Set(codes));
+            setSavedMsg(null);
+            setOpen(true);
+          }}
+        >
+          📌 Save this plan to the Semester board…
+        </button>
+      )}
+      {open && codes.length > 0 && (
+        <div class="pl-advisor-save-panel">
+          <b>Courses the advisor mentioned — pick what to plan:</b>
+          <div class="pl-advisor-save-items">
+            {codes.map((c) => (
+              <label class="pl-advisor-save-item">
+                <input type="checkbox" checked={picked.has(c)} onChange={() => toggle(c)} /> {c}
+              </label>
+            ))}
+          </div>
+          <div class="pl-row" style={{ marginTop: '8px' }}>
+            <select value={termId} onChange={(e) => setTermId((e.target as HTMLSelectElement).value)}>
+              {terms.map((t) => (
+                <option value={t.id}>{t.label}</option>
+              ))}
+            </select>
+            <button class="pl-btn" onClick={save} disabled={!codes.some((c) => picked.has(c))}>
+              Save
+            </button>
+            <button class="pl-btn secondary" onClick={() => setOpen(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -24,6 +24,7 @@ import {
 } from './engine/requirements';
 import { computeLevel, effectiveThemeLevel } from './engine/levels';
 import { LevelChip, LevelHero } from './LevelHero';
+import { Guide } from './Guide';
 import { DegreeImport } from './DegreeImport';
 import { ReviewEditor } from './ReviewEditor';
 import { OverlapView } from './OverlapView';
@@ -155,6 +156,8 @@ function App() {
   const [review, setReview] = useState<PendingReview | null>(null);
   // Level-theme preview from the journey ladder (cosmetic only, never stored).
   const [previewLevel, setPreviewLevel] = useState<number | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [guideAutoChecked, setGuideAutoChecked] = useState(false);
 
   const reload = () => void getAllStored().then(setStore);
 
@@ -205,6 +208,22 @@ function App() {
   }, [store]);
 
   if (!store || !derived) return <div class="pl-shell">Loading…</div>;
+
+  // First visit: auto-run the beginner guide once (replayable via ❓ Guide).
+  if (!guideAutoChecked) {
+    setGuideAutoChecked(true);
+    if (!store.plannerState.guideSeen) setGuideOpen(true);
+  }
+
+  const finishGuide = () => {
+    setGuideOpen(false);
+    if (!store.plannerState.guideSeen) {
+      void sendToBackground({
+        kind: 'PLANNER_STATE_UPDATE',
+        state: { ...store.plannerState, guideSeen: true },
+      });
+    }
+  };
 
   const { degrees, states, evaluations } = derived;
   const levelInfo = degrees.length > 0 ? computeLevel(evaluations, states) : null;
@@ -309,6 +328,9 @@ function App() {
             {' · '}
             {store.schedule ? `${store.schedule.sections.length} sections scheduled` : 'no saved schedule captured'}
           </span>
+          <button class="pl-btn secondary" title="Replay the beginner tour" onClick={() => setGuideOpen(true)}>
+            ❓ Guide
+          </button>
           <button class="pl-btn secondary" onClick={() => chrome.runtime.openOptionsPage()}>
             ⚙ Options
           </button>
@@ -321,6 +343,8 @@ function App() {
           page in Workday once — the extension captures it automatically.
         </div>
       )}
+
+      {guideOpen && <Guide onNavigate={(t) => setTab(t as Tab)} onFinish={finishGuide} />}
 
       <div class="pl-tabs">
         {(['progress', 'whatif', 'advisor', 'board', 'overlap', 'prereqs', 'import', 'history'] as Tab[]).map((t) => (
@@ -447,6 +471,7 @@ function App() {
           prereqOverrides={store.prereqOverrides}
           courseEquivalents={store.courseEquivalents}
           reqOverrides={store.reqOverrides}
+          plannerState={store.plannerState}
           isPro={pro}
           isSupreme={supreme}
         />

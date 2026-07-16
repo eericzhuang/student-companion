@@ -103,7 +103,11 @@ export function LevelHero({
 
   return (
     <>
-      <div class={`pl-card pl-lv-hero pl-lv-${wearLevel}${previewRank ? ' pl-lv-previewing' : ''}`}>
+      <div
+        class={`pl-card pl-lv-hero pl-lv-clickable pl-lv-${wearLevel}${previewRank ? ' pl-lv-previewing' : ''}`}
+        title="Click to open your full journey — every rank, its look, and how XP works"
+        onClick={() => setJourneyOpen(!journeyOpen)}
+      >
         <div class="pl-lv-medal" style={{ '--lv-ring': previewRank ? '100%' : `${info.pct}%` }}>
           <span class="pl-lv-medal-inner">
             <span class="pl-lv-num">{previewRank?.level ?? info.level}</span>
@@ -123,19 +127,21 @@ export function LevelHero({
             <div class="pl-lv-preview-note">
               🎭 Previewing the <b>Level {previewRank.level}</b> look — your real rank is Level {info.level} ·{' '}
               {info.title}.{' '}
-              <button class="pl-link-inline" onClick={() => onPreview(null)}>
+              <button
+                class="pl-link-inline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPreview(null);
+                }}
+              >
                 ↩ back to my level
               </button>
             </div>
           ) : (
             <>
-              <button
-                class="pl-lv-bar"
-                title="Click to see your full journey — every rank, its look, and how XP works"
-                onClick={() => setJourneyOpen(!journeyOpen)}
-              >
+              <div class="pl-lv-bar">
                 <div style={{ width: `${info.pct}%` }} />
-              </button>
+              </div>
               <div class="pl-lv-meta">
                 {next ? (
                   <span>
@@ -146,11 +152,8 @@ export function LevelHero({
                 )}
                 <span class="pl-muted" title="Only completed work earns XP — planned courses don't count until you finish them">
                   {b.courses} courses (+{b.courseXp} XP) · {b.groups} requirements (+{b.groupXp}) ·{' '}
-                  {b.degrees} degree{b.degrees === 1 ? '' : 's'} (+{b.degreeXp})
-                  {' · '}
-                  <button class="pl-link-inline" onClick={() => setJourneyOpen(!journeyOpen)}>
-                    {journeyOpen ? 'hide journey' : '🗺 full journey'}
-                  </button>
+                  {b.degrees} degree{b.degrees === 1 ? '' : 's'} (+{b.degreeXp}){' · '}
+                  <span class="pl-lv-hint">🗺 {journeyOpen ? 'hide journey' : 'journey'} {journeyOpen ? '▴' : '▾'}</span>
                 </span>
               </div>
             </>
