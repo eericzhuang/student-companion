@@ -29,6 +29,7 @@ const MATRIX: Array<{ feature: string; free: boolean; pro: boolean; supreme: boo
   { feature: '⭐ RateMyProfessors ratings, comments & bulk panel', free: true, pro: true, supreme: true },
   { feature: '🗂 Multi-degree progress, overlap & semester board', free: true, pro: true, supreme: true },
   { feature: '🔮 What-if course tryout (impact before registering)', free: true, pro: true, supreme: true },
+  { feature: '🏅 Level-up game: earn XP, climb 10 academic ranks', free: true, pro: true, supreme: true },
   { feature: '📄 Transcript & degree import (rule-based parser)', free: true, pro: true, supreme: true },
   { feature: '✍ Manual requirement verdicts & prerequisites editor', free: true, pro: true, supreme: true },
   { feature: '🤖 AI transcript parsing', free: false, pro: true, supreme: true },
@@ -147,6 +148,7 @@ function App() {
             <li><span class="sub-check">✓</span> RateMyProfessors ratings, comments &amp; bulk panel</li>
             <li><span class="sub-check">✓</span> Multi-degree progress, overlap &amp; semester board</li>
             <li><span class="sub-check">✓</span> 🔮 What-if course tryout</li>
+            <li><span class="sub-check">✓</span> 🏅 Level-up game with 10 academic ranks</li>
             <li><span class="sub-check">✓</span> Transcript &amp; degree import via <b>rule-based</b> parsing</li>
             <li><span class="sub-x">✕</span> <span class="sub-muted">AI parsing &amp; the AI advisor (Pro only)</span></li>
           </ul>

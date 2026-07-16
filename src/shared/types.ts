@@ -197,6 +197,8 @@ export interface PlannerState {
   degreeOrder?: string[];
   /** saved What-if tryout course codes (hypothetical, never counted as real) */
   whatIfCourses?: string[];
+  /** highest level the level-up celebration has already played for */
+  seenLevel?: number;
 }
 
 // ---------- AI history ----------

@@ -815,3 +815,252 @@ table.pl-table th { color: #475569; font-size: 12px; }
 }
 .pl-whatif-pick-item:hover { background: #f5f3ff; }
 .pl-whatif-pick-item + .pl-whatif-pick-item { border-top: 1px solid #f3f0ff; }
+
+/* ============================================================
+   Level-up game (all plans): hero card, header chip, celebration.
+   Tier classes pl-lv-1 … pl-lv-10 escalate from plain gray to a
+   holographic, sparkling "Academic Legend" finish.
+   ============================================================ */
+
+/* --- header chip --- */
+.pl-lv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 10px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  vertical-align: middle;
+  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+}
+
+/* --- hero card --- */
+.pl-lv-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1.5px solid #cbd5e1;
+  position: relative;
+  overflow: hidden;
+}
+.pl-lv-medal {
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  padding: 5px;
+  /* progress ring toward the next level */
+  background: conic-gradient(var(--lv-color, #64748b) var(--lv-ring, 0%), #e2e8f0 0);
+}
+.pl-lv-medal-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #fff;
+}
+.pl-lv-num {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--lv-color, #64748b);
+}
+.pl-lv-body { flex: 1; min-width: 0; }
+.pl-lv-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--lv-color, #334155);
+}
+.pl-lv-xp {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+}
+.pl-lv-bar {
+  height: 10px;
+  margin: 8px 0 6px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+.pl-lv-bar > div {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--lv-color, #64748b);
+  transition: width 0.6s ease;
+}
+.pl-lv-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #475569;
+}
+
+/* --- tier identities: color ramps up, then animation joins in --- */
+.pl-lv-1  { --lv-color: #64748b; }                               /* slate novice */
+.pl-lv-2  { --lv-color: #0284c7; border-color: #bae6fd; }        /* study blue */
+.pl-lv-3  { --lv-color: #0d9488; border-color: #99f6e4; }        /* teal */
+.pl-lv-4  { --lv-color: #16a34a; border-color: #bbf7d0; }        /* scholar green */
+.pl-lv-5  { --lv-color: #7c3aed; border-color: #ddd6fe; }        /* violet */
+.pl-lv-6  { --lv-color: #b45309; border-color: #fcd34d; }        /* honors gold */
+.pl-lv-7  { --lv-color: #b45309; border-color: #f59e0b; }
+.pl-lv-8  { --lv-color: #0369a1; border-color: #7dd3fc; }        /* diamond */
+.pl-lv-9  { --lv-color: #7e22ce; border-color: #d8b4fe; }        /* royal */
+.pl-lv-10 { --lv-color: #be185d; border-color: transparent; }    /* legend */
+
+/* tinted backgrounds from level 4 up */
+.pl-lv-hero.pl-lv-4, .pl-lv-chip.pl-lv-4 { background: linear-gradient(120deg, #f0fdf4, #fff); }
+.pl-lv-hero.pl-lv-5, .pl-lv-chip.pl-lv-5 { background: linear-gradient(120deg, #f5f3ff, #fff); }
+.pl-lv-hero.pl-lv-6, .pl-lv-chip.pl-lv-6,
+.pl-lv-hero.pl-lv-7, .pl-lv-chip.pl-lv-7 { background: linear-gradient(120deg, #fffbeb, #fef3c7, #fffbeb); }
+.pl-lv-hero.pl-lv-8, .pl-lv-chip.pl-lv-8 { background: linear-gradient(120deg, #f0f9ff, #e0f2fe, #f0f9ff); }
+.pl-lv-hero.pl-lv-9, .pl-lv-chip.pl-lv-9 { background: linear-gradient(120deg, #faf5ff, #f3e8ff, #faf5ff); }
+.pl-lv-hero.pl-lv-10, .pl-lv-chip.pl-lv-10 {
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(90deg, #f472b6, #fbbf24, #34d399, #60a5fa, #a78bfa, #f472b6) border-box;
+  border: 2px solid transparent;
+}
+
+@keyframes plLvShimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes plLvGlow {
+  0%, 100% { box-shadow: 0 0 6px 0 var(--lv-color); }
+  50% { box-shadow: 0 0 22px 2px var(--lv-color); }
+}
+@keyframes plLvHue { to { filter: hue-rotate(360deg); } }
+@keyframes plLvSparkle {
+  0% { transform: translateY(8px) scale(0.6); opacity: 0; }
+  40% { opacity: 1; }
+  100% { transform: translateY(-26px) scale(1.1); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* 6+: gold shimmer sweeping across the title */
+  .pl-lv-hero.pl-lv-6 .pl-lv-title, .pl-lv-hero.pl-lv-7 .pl-lv-title,
+  .pl-lv-hero.pl-lv-8 .pl-lv-title, .pl-lv-hero.pl-lv-9 .pl-lv-title,
+  .pl-lv-hero.pl-lv-10 .pl-lv-title {
+    background: linear-gradient(90deg, var(--lv-color) 40%, #fff 50%, var(--lv-color) 60%);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: plLvShimmer 3s linear infinite;
+  }
+  /* the XP pill sits inside the clipped title — restore its own text color */
+  .pl-lv-hero .pl-lv-title .pl-lv-xp {
+    background: #f1f5f9;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+    -webkit-text-fill-color: #475569;
+  }
+  /* 7+: the medallion breathes light */
+  .pl-lv-hero.pl-lv-7 .pl-lv-medal, .pl-lv-hero.pl-lv-8 .pl-lv-medal,
+  .pl-lv-hero.pl-lv-9 .pl-lv-medal, .pl-lv-hero.pl-lv-10 .pl-lv-medal {
+    animation: plLvGlow 2.6s ease-in-out infinite;
+  }
+  /* 9+: floating sparkles rise out of the card */
+  .pl-lv-hero.pl-lv-9::after, .pl-lv-hero.pl-lv-10::after {
+    content: '✦ ✧ ✦';
+    position: absolute;
+    right: 18px;
+    bottom: 4px;
+    font-size: 14px;
+    letter-spacing: 14px;
+    color: var(--lv-color);
+    animation: plLvSparkle 2.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  /* 10: the whole card slowly cycles through the spectrum */
+  .pl-lv-hero.pl-lv-10, .pl-lv-chip.pl-lv-10 { animation: plLvHue 8s linear infinite; }
+}
+
+/* --- level-up celebration overlay --- */
+.pl-lv-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.55);
+  cursor: pointer;
+}
+.pl-lv-pop {
+  position: relative;
+  z-index: 2;
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px 44px;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+  border: 3px solid var(--lv-color, #7c3aed);
+  cursor: default;
+}
+.pl-lv-pop-icon { font-size: 52px; }
+.pl-lv-pop-title {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: var(--lv-color, #7c3aed);
+}
+.pl-lv-pop-rank { margin: 4px 0 14px; font-size: 15px; font-weight: 700; color: #334155; }
+
+.pl-lv-confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.pl-lv-confetti i {
+  position: absolute;
+  top: -12px;
+  width: 9px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0.95;
+}
+@keyframes plConfettiFall {
+  to { transform: translateY(105vh) rotate(720deg); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pl-lv-confetti i { animation: plConfettiFall 2.8s linear infinite; }
+}
+/* spread pieces across the width with varied colors/timing */
+.pl-lv-confetti i:nth-child(6n + 1) { background: #f472b6; }
+.pl-lv-confetti i:nth-child(6n + 2) { background: #fbbf24; }
+.pl-lv-confetti i:nth-child(6n + 3) { background: #34d399; }
+.pl-lv-confetti i:nth-child(6n + 4) { background: #60a5fa; }
+.pl-lv-confetti i:nth-child(6n + 5) { background: #a78bfa; }
+.pl-lv-confetti i:nth-child(6n + 6) { background: #f87171; }
+.pl-lv-confetti i:nth-child(1)  { left: 2%;  animation-delay: 0s; }
+.pl-lv-confetti i:nth-child(2)  { left: 6%;  animation-delay: 0.9s; }
+.pl-lv-confetti i:nth-child(3)  { left: 10%; animation-delay: 0.3s; }
+.pl-lv-confetti i:nth-child(4)  { left: 14%; animation-delay: 1.6s; }
+.pl-lv-confetti i:nth-child(5)  { left: 18%; animation-delay: 0.6s; }
+.pl-lv-confetti i:nth-child(6)  { left: 22%; animation-delay: 2.1s; }
+.pl-lv-confetti i:nth-child(7)  { left: 27%; animation-delay: 0.2s; }
+.pl-lv-confetti i:nth-child(8)  { left: 31%; animation-delay: 1.2s; }
+.pl-lv-confetti i:nth-child(9)  { left: 35%; animation-delay: 0.5s; }
+.pl-lv-confetti i:nth-child(10) { left: 39%; animation-delay: 1.9s; }
+.pl-lv-confetti i:nth-child(11) { left: 43%; animation-delay: 0.1s; }
+.pl-lv-confetti i:nth-child(12) { left: 47%; animation-delay: 1.4s; }
+.pl-lv-confetti i:nth-child(13) { left: 52%; animation-delay: 0.7s; }
+.pl-lv-confetti i:nth-child(14) { left: 56%; animation-delay: 2.3s; }
+.pl-lv-confetti i:nth-child(15) { left: 60%; animation-delay: 0.4s; }
+.pl-lv-confetti i:nth-child(16) { left: 64%; animation-delay: 1.1s; }
+.pl-lv-confetti i:nth-child(17) { left: 68%; animation-delay: 0.8s; }
+.pl-lv-confetti i:nth-child(18) { left: 72%; animation-delay: 1.7s; }
+.pl-lv-confetti i:nth-child(19) { left: 77%; animation-delay: 0.25s; }
+.pl-lv-confetti i:nth-child(20) { left: 81%; animation-delay: 1.3s; }
+.pl-lv-confetti i:nth-child(21) { left: 85%; animation-delay: 0.55s; }
+.pl-lv-confetti i:nth-child(22) { left: 89%; animation-delay: 2s; }
+.pl-lv-confetti i:nth-child(23) { left: 93%; animation-delay: 0.95s; }
+.pl-lv-confetti i:nth-child(24) { left: 97%; animation-delay: 1.5s; }

@@ -20,7 +20,14 @@ All notable user-facing changes to the extension.
   fully editable.
 - **🔮 What-if course tryout**: test courses you're considering against every
   degree's requirements — see before→after progress, per-course impact, and
-  commit winners to the semester plan with one click.
+  commit winners to the semester plan with one click (pick the target term when
+  you have several configured).
+- **🏅 Level-up game**: completed courses, satisfied requirements, and finished
+  degrees earn XP toward 10 academic ranks (Novice → Academic Legend). Each
+  rank restyles your level card — higher ranks add gold shimmer, glowing
+  medallions, sparkles, and a holographic finish — with a confetti celebration
+  every time you level up. Only completed work counts, so the game can't be
+  cheated by stacking planned courses.
 
 ### Pro
 

@@ -22,6 +22,8 @@ import {
   scopeReqOverrides,
   type GroupEvaluation,
 } from './engine/requirements';
+import { computeLevel } from './engine/levels';
+import { LevelChip, LevelHero } from './LevelHero';
 import { DegreeImport } from './DegreeImport';
 import { ReviewEditor } from './ReviewEditor';
 import { OverlapView } from './OverlapView';
@@ -203,6 +205,7 @@ function App() {
   if (!store || !derived) return <div class="pl-shell">Loading…</div>;
 
   const { degrees, states, evaluations } = derived;
+  const levelInfo = degrees.length > 0 ? computeLevel(evaluations, states) : null;
 
   const onPlannerStateChange = (next: PlannerState) =>
     setStore({ ...store, plannerState: next });
@@ -287,7 +290,10 @@ function App() {
   return (
     <div class={shellClass}>
       <div class="pl-header">
-        <h1>🎓 Degree Planner {planBadge}</h1>
+        <h1>
+          🎓 Degree Planner {planBadge}
+          {levelInfo && <LevelChip info={levelInfo} />}
+        </h1>
         <div class="pl-row">
           <span class="pl-muted">
             {store.academicHistory
@@ -326,6 +332,7 @@ function App() {
 
       {tab === 'progress' && (
         <>
+          {levelInfo && <LevelHero info={levelInfo} plannerState={store.plannerState} />}
           <div class="pl-legend">
             <span>✅ satisfied</span>
             <span>🕐 partially done</span>
