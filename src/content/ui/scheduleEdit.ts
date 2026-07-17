@@ -9,6 +9,16 @@ import { parseMeetingPatterns } from '../../shared/time';
 import { mergeSections } from '../../shared/schedule';
 import type { Section } from '../../shared/types';
 
+// Serialize edits: each one is a read-modify-write on the stored schedule, so
+// two quick edits (e.g. professor then location) must not read the same
+// snapshot or the second write silently drops the first.
+let editQueue: Promise<unknown> = Promise.resolve();
+function enqueue<T>(fn: () => Promise<T>): Promise<T> {
+  const run = editQueue.then(fn, fn);
+  editQueue = run.catch(() => {});
+  return run;
+}
+
 async function persist(sections: Section[]): Promise<void> {
   const current = await getStored('schedule');
   await sendToBackground({
@@ -23,29 +33,33 @@ async function persist(sections: Section[]): Promise<void> {
 }
 
 /** Add a course by code + meeting-pattern text. Returns an error string or null. */
-export async function addManualSection(code: string, patternText: string): Promise<string | null> {
+export async function addManualSection(code: string, patternText: string, instructor?: string): Promise<string | null> {
   const c = code.trim().replace(/\s+/g, ' ');
   if (!c) return 'Enter a course code.';
   const meetings = parseMeetingPatterns(patternText);
   if (meetings.length === 0) {
     return 'Couldn\'t read the time. Try like "MWF 10:00 AM - 10:50 AM".';
   }
-  const current = await getStored('schedule');
-  const section: Section = {
-    sectionId: `manual:${c}:${Date.now()}`,
-    courseCode: c,
-    title: c,
-    credits: null,
-    instructor: null,
-    meetings,
-  };
-  await persist(mergeSections(current?.sections ?? [], [section]));
-  return null;
+  return enqueue(async () => {
+    const current = await getStored('schedule');
+    const section: Section = {
+      sectionId: `manual:${c}:${Date.now()}`,
+      courseCode: c,
+      title: c,
+      credits: null,
+      instructor: instructor?.trim() || null,
+      meetings,
+    };
+    await persist(mergeSections(current?.sections ?? [], [section]));
+    return null;
+  });
 }
 
 export async function removeSection(sectionId: string): Promise<void> {
-  const current = await getStored('schedule');
-  await persist((current?.sections ?? []).filter((s) => s.sectionId !== sectionId));
+  return enqueue(async () => {
+    const current = await getStored('schedule');
+    await persist((current?.sections ?? []).filter((s) => s.sectionId !== sectionId));
+  });
 }
 
 export async function renameSection(
@@ -53,12 +67,37 @@ export async function renameSection(
   courseCode: string,
   title?: string,
 ): Promise<void> {
-  const current = await getStored('schedule');
-  await persist(
-    (current?.sections ?? []).map((s) =>
-      s.sectionId === sectionId
-        ? { ...s, courseCode: courseCode.trim() || s.courseCode, title: title ?? s.title }
-        : s,
-    ),
-  );
+  return enqueue(async () => {
+    const current = await getStored('schedule');
+    await persist(
+      (current?.sections ?? []).map((s) =>
+        s.sectionId === sectionId
+          ? { ...s, courseCode: courseCode.trim() || s.courseCode, title: title ?? s.title }
+          : s,
+      ),
+    );
+  });
+}
+
+/** Edit a section's professor and/or location (location applies to all its meetings). */
+export async function updateSectionDetails(
+  sectionId: string,
+  patch: { instructor?: string; location?: string },
+): Promise<void> {
+  return enqueue(async () => {
+    const current = await getStored('schedule');
+    await persist(
+      (current?.sections ?? []).map((s) => {
+        if (s.sectionId !== sectionId) return s;
+        return {
+          ...s,
+          instructor: patch.instructor !== undefined ? patch.instructor.trim() || null : s.instructor,
+          meetings:
+            patch.location !== undefined
+              ? s.meetings.map((m) => ({ ...m, location: patch.location!.trim() || undefined }))
+              : s.meetings,
+        };
+      }),
+    );
+  });
 }

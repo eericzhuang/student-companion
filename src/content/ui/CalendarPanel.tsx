@@ -28,10 +28,11 @@ import {
   DEFAULT_WALK_KMH,
   type Transition,
 } from '../../shared/route';
-import { rmpProfessorUrl } from '../../shared/rmpUrl';
+import { ratingClass, rmpProfessorUrl } from '../../shared/rmpUrl';
 import { displayInstructorName } from '../../shared/fuzzy';
 import { cleanSectionTitle } from '../../shared/schedule';
-import { addManualSection, removeSection, renameSection } from './scheduleEdit';
+import { addManualSection, removeSection, renameSection, updateSectionDetails } from './scheduleEdit';
+import { exportScheduleImage } from './exportImage';
 import { useDraggable, type Pos } from './useDraggable';
 import { WeekGrid } from './WeekGrid';
 import { isPro } from '../../shared/plan';
@@ -167,7 +168,23 @@ export function CalendarPanel() {
     <div ref={panelRef} class={`wdc-panel${pro ? ' wdc-pro' : ''}`} style={{ left: `${pos.x}px`, top: `${pos.y}px` }}>
       <div class="wdc-panel-header" onPointerDown={startDrag}>
         <span>📅 My Saved Schedule</span>
-        <button onClick={() => setCollapsedPersist(true)}>—</button>
+        <span>
+          <button
+            title="Save the calendar as an image (with rooms, professors, ratings, and warnings)"
+            disabled={sections.length === 0}
+            onClick={() =>
+              exportScheduleImage({
+                sections,
+                termLabel: schedule?.termLabel ?? null,
+                ratings,
+                warningTexts: [...gridWarnings.values()].map((w) => w.text),
+              })
+            }
+          >
+            📷
+          </button>{' '}
+          <button onClick={() => setCollapsedPersist(true)}>—</button>
+        </span>
       </div>
       <div class="wdc-panel-sub" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>
@@ -210,7 +227,7 @@ export function CalendarPanel() {
       ) : view === 'free' ? (
         <FreeTimeList sections={sections} />
       ) : view === 'map' ? (
-        <RouteMap sections={sections} campusMap={campusMap} transitions={transitions} pro={pro} />
+        <RouteMap sections={sections} campusMap={campusMap} transitions={transitions} />
       ) : (
         <ScheduleEditList sections={sections} />
       )}
@@ -264,7 +281,7 @@ function EventDetails({
         {t && (
           <span class="wdc-event-rmp">
             {' '}
-            · ★ {t.avgRating?.toFixed(1) ?? '–'}
+            · <b class={`wdc-rate-${ratingClass(t.avgRating)}`}>★ {t.avgRating?.toFixed(1) ?? '–'}</b>
             {t.avgDifficulty != null && <> · difficulty {t.avgDifficulty.toFixed(1)}</>}
             {t.wouldTakeAgainPercent != null && <> · {Math.round(t.wouldTakeAgainPercent)}% would take again</>}{' '}
             ({t.numRatings}){' '}
@@ -293,16 +310,15 @@ function RouteMap({
   sections,
   campusMap,
   transitions,
-  pro,
 }: {
   sections: Section[];
   campusMap: CampusMap | null;
   transitions: Transition[];
-  pro: boolean;
 }) {
   const daysPresent = DAY_LABELS.filter((d) => sections.some((s) => s.meetings.some((m) => m.days & d.mask)));
   const [dayMask, setDayMask] = useState<DayMask | null>(daysPresent[0]?.mask ?? null);
-  const [busy, setBusy] = useState<null | 'osm' | 'ai'>(null);
+  const [busy, setBusy] = useState(false);
+  const [openPath, setOpenPath] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
   const buildings = campusMap?.buildings ?? {};
@@ -316,28 +332,20 @@ function RouteMap({
   );
   const missing = allBuildings.filter((b) => !buildings[b]);
 
-  const locate = async (kind: 'osm' | 'ai') => {
-    if (kind === 'ai' && !pro) {
-      setNote('🤖 AI locate is a Pro feature — the free lookup covers buildings OpenStreetMap knows. You can also add coordinates yourself in ⚙ Options → Campus map.');
-      return;
-    }
-    setBusy(kind);
+  const locate = async () => {
+    setBusy(true);
     setNote(null);
     try {
-      const res = await sendToBackground<MapLookupResult>(
-        kind === 'osm' ? { kind: 'MAP_GEOCODE', buildings: allBuildings } : { kind: 'MAP_RESEARCH', buildings: missing },
-      );
+      const res = await sendToBackground<MapLookupResult>({ kind: 'MAP_GEOCODE', buildings: allBuildings });
       setNote(
         res.missing.length === 0
           ? 'All buildings located ✓'
-          : `Couldn't locate: ${res.missing.join(', ')} — ${
-              kind === 'osm' ? 'try 🤖 AI locate, or ' : ''
-            }add coordinates in ⚙ Options → Campus map.`,
+          : `Couldn't locate: ${res.missing.join(', ')} — add their coordinates in ⚙ Options → Campus map.`,
       );
     } catch (err) {
       setNote(err instanceof Error ? err.message : String(err));
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   };
 
@@ -388,19 +396,9 @@ function RouteMap({
           ))}
         </span>
         <span>
-          <button class="wdc-capture-btn wdc-map-btn" disabled={busy !== null} onClick={() => void locate('osm')}>
-            {busy === 'osm' ? 'Locating…' : '📍 Locate buildings (free)'}
+          <button class="wdc-capture-btn wdc-map-btn" disabled={busy} onClick={() => void locate()}>
+            {busy ? 'Locating…' : '📍 Locate buildings (free)'}
           </button>
-          {missing.length > 0 && (
-            <button
-              class="wdc-capture-btn wdc-map-btn"
-              disabled={busy !== null}
-              title={pro ? 'Web research finds buildings OpenStreetMap misses' : 'Pro feature'}
-              onClick={() => void locate('ai')}
-            >
-              {busy === 'ai' ? 'Researching…' : `🤖 AI locate ${missing.length} missing${pro ? '' : ' (Pro)'}`}
-            </button>
-          )}
         </span>
       </div>
       {note && <div class="wdc-map-note">{note}</div>}
@@ -429,7 +427,13 @@ function RouteMap({
                               {' '}
                               <a href={gmaps(leg)!} target="_blank" rel="noreferrer">
                                 directions ↗
-                              </a>
+                              </a>{' '}
+                              <button
+                                class="wdc-link-btn"
+                                onClick={() => setOpenPath(openPath === leg.toKey ? null : leg.toKey)}
+                              >
+                                {openPath === leg.toKey ? 'hide path' : '🗺 show path'}
+                              </button>
                             </>
                           )}
                         </>
@@ -439,6 +443,9 @@ function RouteMap({
                     )}
                   </span>
                 </div>
+              )}
+              {leg && openPath === leg.toKey && leg.fromBuilding && leg.toBuilding && buildings[leg.fromBuilding] && buildings[leg.toBuilding] && (
+                <LegPath from={buildings[leg.fromBuilding]!} to={buildings[leg.toBuilding]!} fmtDist={fmtDist} />
               )}
               <div class="wdc-itin-stop">
                 <span class="wdc-itin-num">{i + 1}</span>
@@ -467,14 +474,87 @@ function RouteMap({
   );
 }
 
+/**
+ * Real walking path for one leg, fetched from the free OSRM demo server and
+ * drawn as a small aspect-correct polyline (start = green, end = red).
+ */
+function LegPath({
+  from,
+  to,
+  fmtDist,
+}: {
+  from: { lat: number; lng: number };
+  to: { lat: number; lng: number };
+  fmtDist: (m: number) => string;
+}) {
+  interface WalkRouteView {
+    distanceM: number;
+    durationMin: number;
+    coords: Array<[number, number]>;
+  }
+  const [route, setRoute] = useState<WalkRouteView | null | 'loading'>('loading');
+
+  useEffect(() => {
+    let dead = false;
+    setRoute('loading');
+    void sendToBackground<WalkRouteView | null>({
+      kind: 'MAP_ROUTE',
+      from: { lat: from.lat, lng: from.lng },
+      to: { lat: to.lat, lng: to.lng },
+    })
+      .then((r) => !dead && setRoute(r))
+      .catch(() => !dead && setRoute(null));
+    return () => {
+      dead = true;
+    };
+  }, [from.lat, from.lng, to.lat, to.lng]);
+
+  if (route === 'loading') return <div class="wdc-map-note">loading path…</div>;
+  if (!route || route.coords.length < 2) {
+    return <div class="wdc-map-note">Path unavailable right now — the directions link still works.</div>;
+  }
+
+  // Project to meters so the shape keeps its real aspect ratio.
+  const midLat = (from.lat + to.lat) / 2;
+  const mx = (lng: number) => lng * 111320 * Math.cos((midLat * Math.PI) / 180);
+  const my = (lat: number) => lat * 110540;
+  const xs = route.coords.map(([lng]) => mx(lng));
+  const ys = route.coords.map(([, lat]) => my(lat));
+  const W = 360;
+  const H = 140;
+  const PAD = 10;
+  const spanX = Math.max(1, Math.max(...xs) - Math.min(...xs));
+  const spanY = Math.max(1, Math.max(...ys) - Math.min(...ys));
+  const k = Math.min((W - 2 * PAD) / spanX, (H - 2 * PAD) / spanY);
+  const ox = (W - spanX * k) / 2;
+  const oy = (H - spanY * k) / 2;
+  const px = (i: number) => ox + (xs[i]! - Math.min(...xs)) * k;
+  const py = (i: number) => H - oy - (ys[i]! - Math.min(...ys)) * k;
+  const pts = route.coords.map((_, i) => `${px(i).toFixed(1)},${py(i).toFixed(1)}`).join(' ');
+
+  return (
+    <div class="wdc-leg-path">
+      <svg viewBox={`0 0 ${W} ${H}`}>
+        <polyline points={pts} fill="none" stroke="var(--wdc-accent, #0f4c81)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx={px(0)} cy={py(0)} r="5" fill="#16a34a" />
+        <circle cx={px(route.coords.length - 1)} cy={py(route.coords.length - 1)} r="5" fill="#dc2626" />
+      </svg>
+      <div class="wdc-map-note">
+        Real path: <b>{fmtDist(route.distanceM)}</b> · ~{Math.round(route.durationMin)} min walk (OpenStreetMap)
+      </div>
+    </div>
+  );
+}
+
 /** Add / remove / rename captured sections by hand. */
 function ScheduleEditList({ sections }: { sections: Section[] }) {
   const [code, setCode] = useState('');
   const [pattern, setPattern] = useState('');
+  const [instructor, setInstructor] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const add = async () => {
-    const err = await addManualSection(code, pattern);
+    const err = await addManualSection(code, pattern, instructor);
     if (err) {
       setError(err);
       return;
@@ -482,6 +562,7 @@ function ScheduleEditList({ sections }: { sections: Section[] }) {
     setError(null);
     setCode('');
     setPattern('');
+    setInstructor('');
   };
 
   const summarize = (s: Section) =>
@@ -493,19 +574,39 @@ function ScheduleEditList({ sections }: { sections: Section[] }) {
     <div class="wdc-edit">
       <div class="wdc-edit-list">
         {sections.map((s) => (
-          <div class="wdc-edit-row">
-            <input
-              class="wdc-edit-code"
-              value={s.courseCode}
-              title="Rename course"
-              onChange={(e) => void renameSection(s.sectionId, (e.target as HTMLInputElement).value)}
-            />
-            <span class="wdc-edit-time" title={summarize(s)}>
-              {summarize(s)}
-            </span>
-            <button class="wdc-edit-del" title="Remove" onClick={() => void removeSection(s.sectionId)}>
-              ✕
-            </button>
+          <div class="wdc-edit-item">
+            <div class="wdc-edit-row">
+              <input
+                class="wdc-edit-code"
+                value={s.courseCode}
+                title="Rename course"
+                onChange={(e) => void renameSection(s.sectionId, (e.target as HTMLInputElement).value)}
+              />
+              <span class="wdc-edit-time" title={summarize(s)}>
+                {summarize(s)}
+              </span>
+              <button class="wdc-edit-del" title="Remove" onClick={() => void removeSection(s.sectionId)}>
+                ✕
+              </button>
+            </div>
+            <div class="wdc-edit-row wdc-edit-details">
+              <input
+                placeholder="👤 Professor"
+                title="Professor (used for the RMP rating)"
+                value={s.instructor ?? ''}
+                onChange={(e) =>
+                  void updateSectionDetails(s.sectionId, { instructor: (e.target as HTMLInputElement).value })
+                }
+              />
+              <input
+                placeholder="📍 Building + room"
+                title="Location (used for walk-time warnings)"
+                value={s.meetings[0]?.location ?? ''}
+                onChange={(e) =>
+                  void updateSectionDetails(s.sectionId, { location: (e.target as HTMLInputElement).value })
+                }
+              />
+            </div>
           </div>
         ))}
         {sections.length === 0 && <div class="wdc-freetime-none" style={{ padding: '8px 12px' }}>No courses yet — add one below.</div>}
@@ -521,6 +622,11 @@ function ScheduleEditList({ sections }: { sections: Section[] }) {
           placeholder="MWF 10:00 AM - 10:50 AM | Baker Hall 200"
           value={pattern}
           onInput={(e) => setPattern((e.target as HTMLInputElement).value)}
+        />
+        <input
+          placeholder="Professor (optional)"
+          value={instructor}
+          onInput={(e) => setInstructor((e.target as HTMLInputElement).value)}
           onKeyDown={(e) => e.key === 'Enter' && void add()}
         />
         {error && <div class="wdc-edit-error">{error}</div>}

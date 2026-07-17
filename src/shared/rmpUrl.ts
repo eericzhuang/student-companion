@@ -14,3 +14,11 @@ export function rmpProfessorUrl(teacherId: string): string | null {
   if (/^\d+$/.test(teacherId)) return `https://www.ratemyprofessors.com/professor/${teacherId}`;
   return null;
 }
+
+/** RMP-style color bucket for a rating (matches the badge thresholds). */
+export function ratingClass(rating: number | null | undefined): 'good' | 'mid' | 'bad' | 'none' {
+  if (rating == null) return 'none';
+  if (rating >= 3.8) return 'good';
+  if (rating >= 2.8) return 'mid';
+  return 'bad';
+}

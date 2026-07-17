@@ -48,7 +48,7 @@ export type ExtRequest =
   | { kind: 'REQ_OVERRIDE_SET'; key: string; value: ReqOverrideValue | null }
   // --- campus map (walk-time warnings) ---
   | { kind: 'MAP_GEOCODE'; buildings: string[] }
-  | { kind: 'MAP_RESEARCH'; buildings: string[] }
+  | { kind: 'MAP_ROUTE'; from: { lat: number; lng: number }; to: { lat: number; lng: number } }
   | { kind: 'MAP_SET'; map: CampusMap }
   | { kind: 'AI_TEST' }
   // --- billing (only when a billing backend is configured) ---

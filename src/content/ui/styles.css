@@ -1050,3 +1050,37 @@
 .wdc-itin-leg.wdc-risk-miss { color: #991b1b; background: #fef2f2; border-radius: 8px; }
 .wdc-itin-leg.wdc-risk-tight { color: #92400e; background: #fffbeb; border-radius: 8px; }
 .wdc-itin-leg a { color: var(--wdc-accent, #0f4c81); }
+
+/* --- rating colors (same buckets as the RMP badges) --- */
+.wdc-rate-good { color: #16a34a; }
+.wdc-rate-mid { color: #d97706; }
+.wdc-rate-bad { color: #dc2626; }
+.wdc-rate-none { color: #64748b; }
+/* on dark event blocks, use bright variants */
+.wdc-rate-block-good { color: #86efac; }
+.wdc-rate-block-mid { color: #fcd34d; }
+.wdc-rate-block-bad { color: #fca5a5; }
+.wdc-rate-block-none { color: #cbd5e1; }
+
+/* --- real-path preview under a route leg --- */
+.wdc-leg-path { margin: 4px 0 6px 26px; }
+.wdc-leg-path svg {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  background: #f0f6ff;
+  border: 1px solid #dbe4f0;
+  border-radius: 10px;
+}
+
+/* --- edit view: professor + location detail inputs --- */
+.wdc-edit-item { border-bottom: 1px solid #eef0f3; padding: 4px 0; }
+.wdc-edit-details { padding: 2px 8px 6px; display: flex; gap: 6px; }
+.wdc-edit-details input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 3px 7px;
+  font-size: 11px;
+}

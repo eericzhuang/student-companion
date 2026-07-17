@@ -49,8 +49,7 @@ const chromeStub = {
         case 'OPEN_SUBSCRIBE':
           window.location.href = '/subscribe.html';
           return { ok: true };
-        case 'MAP_GEOCODE':
-        case 'MAP_RESEARCH': {
+        case 'MAP_GEOCODE': {
           const cur = (store.campusMap as { school: string | null; buildings: Record<string, unknown> }) ?? {
             school: 'Cornell University',
             buildings: {},
@@ -59,7 +58,7 @@ const chromeStub = {
           const missing: string[] = [];
           for (const name of req.buildings as string[]) {
             const hit = mockBuildingCoords[name];
-            if (hit) buildings[name] = { ...hit, source: req.kind === 'MAP_GEOCODE' ? 'osm' : 'ai' };
+            if (hit) buildings[name] = { ...hit, source: 'osm' };
             else if (!buildings[name]) missing.push(name);
           }
           const map = { school: 'Cornell University', buildings };
@@ -69,6 +68,21 @@ const chromeStub = {
         case 'MAP_SET':
           write('campusMap', req.map);
           return { ok: true };
+        case 'MAP_ROUTE': {
+          // canned zigzag path between the two points (like a street route)
+          const f = req.from as { lat: number; lng: number };
+          const t = req.to as { lat: number; lng: number };
+          const coords: Array<[number, number]> = [];
+          for (let i = 0; i <= 10; i++) {
+            const k = i / 10;
+            const jitter = i % 2 === 0 ? 0.0006 : -0.0006;
+            coords.push([f.lng + (t.lng - f.lng) * k + (i > 0 && i < 10 ? jitter : 0), f.lat + (t.lat - f.lat) * k]);
+          }
+          const dLat = (t.lat - f.lat) * 110540;
+          const dLng = (t.lng - f.lng) * 111320 * Math.cos((f.lat * Math.PI) / 180);
+          const dist = Math.sqrt(dLat * dLat + dLng * dLng) * 1.22;
+          return { ok: true, data: { distanceM: dist, durationMin: dist / 80, coords } };
+        }
         case 'PLANNER_STATE_UPDATE':
           write('plannerState', req.state);
           return { ok: true };

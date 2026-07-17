@@ -44,6 +44,8 @@ export default defineManifest({
     'https://api.anthropic.com/*',
     // Free building geocoding for campus-map walk-time warnings
     'https://nominatim.openstreetmap.org/*',
+    // Free walking-route paths for the calendar Route view
+    'https://routing.openstreetmap.de/*',
   ],
   optional_host_permissions: ['https://*/*'],
   web_accessible_resources: [

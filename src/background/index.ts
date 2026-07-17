@@ -16,7 +16,7 @@ import {
   testAiConnection,
 } from './claude/client';
 import { heuristicParseDegree } from './degreeHeuristic';
-import { aiLocateBuildings, geocodeBuildings, setCampusMap } from './map';
+import { fetchWalkingRoute, geocodeBuildings, setCampusMap } from './map';
 import { activateLicense, refreshLicense } from './billing';
 import { parseTranscriptText } from '../shared/transcript';
 import { aiCallStatus, isSupreme } from '../shared/plan';
@@ -219,11 +219,9 @@ async function handle(req: ExtRequest, trusted: boolean): Promise<unknown> {
     case 'MAP_GEOCODE':
       // Free for everyone: OpenStreetMap Nominatim, rate-limited + cached.
       return geocodeBuildings(req.buildings);
-    case 'MAP_RESEARCH': {
-      const { settings } = await getAllStored();
-      requireAi(aiCallStatus(settings), 'AI building lookup');
-      return aiLocateBuildings(req.buildings);
-    }
+    case 'MAP_ROUTE':
+      // Real walking path via the free OSRM demo (cached; no key, no AI).
+      return fetchWalkingRoute(req.from, req.to);
     case 'MAP_SET':
       await setCampusMap(req.map);
       return null;

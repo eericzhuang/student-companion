@@ -1,15 +1,13 @@
 /**
  * Campus-map building geocoding.
  *
- * Free path (all users): OpenStreetMap's Nominatim geocoder, one building at a
- * time with ≥1.1s spacing per its usage policy, results cached permanently in
- * storage. AI path (Pro/Supreme): web research through the normal AI pipeline
- * (relay budgets and rate limits apply) for buildings Nominatim can't find.
- * Manual path: users edit coordinates in Options (MAP_SET).
+ * All free, no AI: OpenStreetMap's Nominatim geocoder for building
+ * coordinates (one request at a time with ≥1.1s spacing per its usage policy,
+ * results cached permanently in storage), the OSRM demo server for real
+ * walking paths, and manual editing in Options (MAP_SET).
  */
 import type { CampusBuilding, CampusMap } from '../shared/types';
 import { getStored, setStored } from '../shared/storage';
-import { researchBuildingCoords } from './claude/client';
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
 // Nominatim asks for identification; fetch can't set User-Agent, so use the
@@ -89,21 +87,6 @@ export async function geocodeBuildings(names: string[]): Promise<MapLookupResult
   return { map, missing };
 }
 
-/** AI research (Pro/Supreme, budgeted via the relay) for still-missing buildings. */
-export async function aiLocateBuildings(names: string[]): Promise<MapLookupResult> {
-  const map = await currentMap();
-  const wanted = names.filter((n) => !map.buildings[n]);
-  if (wanted.length > 0 && map.school) {
-    // Cap one research call at 25 buildings to keep responses reliable.
-    const found = await researchBuildingCoords(map.school, wanted.slice(0, 25));
-    for (const b of found) {
-      if (wanted.includes(b.name)) map.buildings[b.name] = { lat: b.lat, lng: b.lng, source: 'ai' };
-    }
-  }
-  await setStored('campusMap', map);
-  return { map, missing: names.filter((n) => !map.buildings[n]) };
-}
-
 /** Full-map replacement from the Options editor (single-writer convention). */
 export async function setCampusMap(map: CampusMap): Promise<void> {
   const clean: Record<string, CampusBuilding> = {};
@@ -119,4 +102,50 @@ export async function setCampusMap(map: CampusMap): Promise<void> {
     }
   }
   await setStored('campusMap', { school: map.school, buildings: clean });
+}
+
+// ---------- Real walking routes (free OSRM demo server, no AI, no key) ----------
+
+export interface WalkRoute {
+  distanceM: number;
+  durationMin: number;
+  /** route geometry as [lng, lat] pairs, decimated for drawing */
+  coords: Array<[number, number]>;
+}
+
+const routeCache = new Map<string, WalkRoute | null>();
+
+export async function fetchWalkingRoute(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+): Promise<WalkRoute | null> {
+  const key = `${from.lat.toFixed(5)},${from.lng.toFixed(5)}|${to.lat.toFixed(5)},${to.lng.toFixed(5)}`;
+  if (routeCache.has(key)) return routeCache.get(key)!;
+  let route: WalkRoute | null = null;
+  try {
+    const url = `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (res.ok) {
+      const data = (await res.json()) as {
+        code: string;
+        routes?: Array<{ distance: number; duration: number; geometry: { coordinates: Array<[number, number]> } }>;
+      };
+      const r = data.code === 'Ok' ? data.routes?.[0] : undefined;
+      if (r) {
+        const pts = r.geometry.coordinates;
+        // keep at most ~120 points for a small preview drawing
+        const step = Math.max(1, Math.ceil(pts.length / 120));
+        route = {
+          distanceM: r.distance,
+          durationMin: r.duration / 60,
+          coords: pts.filter((_, i) => i % step === 0 || i === pts.length - 1),
+        };
+      }
+    }
+  } catch {
+    route = null; // offline / server busy — the straight-line estimate stands
+  }
+  if (routeCache.size > 200) routeCache.clear();
+  routeCache.set(key, route);
+  return route;
 }

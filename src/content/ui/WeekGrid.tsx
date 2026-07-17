@@ -8,6 +8,7 @@ import { DAYS, type DayMask, type Meeting, type Section } from '../../shared/typ
 import { formatMinutes, meetingsOverlap } from '../../shared/time';
 import { meetingKey } from '../../shared/route';
 import { displayInstructorName } from '../../shared/fuzzy';
+import { ratingClass } from '../../shared/rmpUrl';
 
 const DAY_ORDER: Array<{ mask: DayMask; label: string }> = [
   { mask: DAYS.MON, label: 'Mon' },
@@ -19,7 +20,7 @@ const DAY_ORDER: Array<{ mask: DayMask; label: string }> = [
   { mask: DAYS.SUN, label: 'Sun' },
 ];
 
-const PALETTE = ['#0f4c81', '#0e7490', '#7c2d92', '#b45309', '#166534', '#9f1239', '#3730a3'];
+export const PALETTE = ['#0f4c81', '#0e7490', '#7c2d92', '#b45309', '#166534', '#9f1239', '#3730a3'];
 
 const PX_PER_MIN = 0.8; // vertical scale; a 10-hour span ≈ 480px
 
@@ -109,7 +110,9 @@ export function WeekGrid({ sections, ghost, warnings, onEventClick, scale = 1, r
               <div class="wdc-block-room">
                 👤 {displayInstructorName(section.instructor)}
                 {ratings?.get(section.instructor) != null && (
-                  <b> ★{ratings.get(section.instructor)!.toFixed(1)}</b>
+                  <b class={`wdc-rate-block-${ratingClass(ratings.get(section.instructor))}`}>
+                    {' '}★{ratings.get(section.instructor)!.toFixed(1)}
+                  </b>
                 )}
               </div>
             )}

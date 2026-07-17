@@ -13,9 +13,15 @@ All notable user-facing changes to the extension.
   manual add/remove/rename of sections. Rooms show on event blocks; click any
   class for its professor, live RMP rating, and location.
 - **Route view + "you might miss class" warnings**: building coordinates are
-  looked up for free (OpenStreetMap), the day's walk is drawn as a pin map,
-  and any break shorter than the estimated walk gets a 🚨 warning on the
-  calendar (walking speed adjustable; coordinates editable in Options).
+  looked up for free (OpenStreetMap — no AI involved), the day shows as an
+  itinerary with per-leg distance, walk time, and verdict, plus the real
+  walking path drawn from OpenStreetMap routing and a Google Maps directions
+  link. Breaks shorter than the walk get a 🚨 warning on the calendar
+  (walking speed adjustable; coordinates editable in Options).
+- **📷 Save calendar as image**: one click downloads the week as a crisp PNG
+  with rooms, professors, color-coded ratings, and walk warnings included.
+- Ratings are color-coded everywhere (green ≥3.8, amber ≥2.8, red below),
+  and the calendar's Edit view can fix a section's professor and location.
 - **💬 Feedback** section in Options — report problems or send suggestions by
   pre-filled email or GitHub issue.
 - **RateMyProfessors ratings** inline next to instructor names, plus a
@@ -51,8 +57,6 @@ All notable user-facing changes to the extension.
   term).
 - **AI transcript parsing** and **AI degree-catalog parsing** (more accurate
   than the rule-based fallback).
-- **🤖 AI building lookup** for campus buildings the free geocoder can't find
-  (runs through the plan's AI allowance).
 - AI history log, animated Pro UI.
 
 ### Supreme
