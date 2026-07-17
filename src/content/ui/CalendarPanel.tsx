@@ -29,7 +29,7 @@ import {
   type Transition,
 } from '../../shared/route';
 import { ratingClass, rmpProfessorUrl } from '../../shared/rmpUrl';
-import { displayInstructorName } from '../../shared/fuzzy';
+import { cleanInstructorName, displayInstructorName } from '../../shared/fuzzy';
 import { cleanSectionTitle } from '../../shared/schedule';
 import { addManualSection, removeSection, renameSection, updateSectionDetails } from './scheduleEdit';
 import { exportScheduleImage } from './exportImage';
@@ -304,7 +304,7 @@ function EventDetails({
  * walk between buildings shown as distance + estimated time and a verdict
  * (comfortable / tight / you may miss it). Each leg links to real walking
  * directions on Google Maps. No tiles are embedded; coordinates come from
- * free OSM geocoding (or AI research / manual entry in Options).
+ * free OSM geocoding (or manual entry in Options).
  */
 function RouteMap({
   sections,
@@ -396,12 +396,22 @@ function RouteMap({
           ))}
         </span>
         <span>
-          <button class="wdc-capture-btn wdc-map-btn" disabled={busy} onClick={() => void locate()}>
-            {busy ? 'Locating…' : '📍 Locate buildings (free)'}
-          </button>
+          {missing.length === 0 ? (
+            <span class="wdc-map-located">✓ {allBuildings.length === 1 ? 'building' : `all ${allBuildings.length} buildings`} located</span>
+          ) : (
+            <button class="wdc-capture-btn wdc-map-btn" disabled={busy} onClick={() => void locate()}>
+              {busy ? 'Locating…' : `📍 Locate ${missing.length} building${missing.length === 1 ? '' : 's'} (free)`}
+            </button>
+          )}
         </span>
       </div>
       {note && <div class="wdc-map-note">{note}</div>}
+      {!note && missing.length > 0 && (
+        <div class="wdc-map-note">
+          <b>Locate</b> looks up each building's coordinates on OpenStreetMap so the walks below get
+          real distances and times. Still needed: {missing.join(', ')}.
+        </div>
+      )}
 
       <div class="wdc-itin">
         {dayEvents.map(({ s, m }, i) => {
@@ -550,11 +560,13 @@ function LegPath({
 function ScheduleEditList({ sections }: { sections: Section[] }) {
   const [code, setCode] = useState('');
   const [pattern, setPattern] = useState('');
+  const [location, setLocation] = useState('');
   const [instructor, setInstructor] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const add = async () => {
-    const err = await addManualSection(code, pattern, instructor);
+    const loc = location.trim();
+    const err = await addManualSection(code, loc ? `${pattern} | ${loc}` : pattern, instructor);
     if (err) {
       setError(err);
       return;
@@ -562,12 +574,13 @@ function ScheduleEditList({ sections }: { sections: Section[] }) {
     setError(null);
     setCode('');
     setPattern('');
+    setLocation('');
     setInstructor('');
   };
 
   const summarize = (s: Section) =>
     s.meetings
-      .map((m) => `${dayMaskToLabels(m.days).join('')} ${formatMinutes(m.startMin)}–${formatMinutes(m.endMin)}`)
+      .map((m) => `${dayMaskToLabels(m.days).join(' ')} ${formatMinutes(m.startMin)}–${formatMinutes(m.endMin)}`)
       .join(', ') || 'no time';
 
   return (
@@ -593,7 +606,7 @@ function ScheduleEditList({ sections }: { sections: Section[] }) {
               <input
                 placeholder="👤 Professor"
                 title="Professor (used for the RMP rating)"
-                value={s.instructor ?? ''}
+                value={s.instructor ? cleanInstructorName(s.instructor) : ''}
                 onChange={(e) =>
                   void updateSectionDetails(s.sectionId, { instructor: (e.target as HTMLInputElement).value })
                 }
@@ -619,12 +632,17 @@ function ScheduleEditList({ sections }: { sections: Section[] }) {
           onInput={(e) => setCode((e.target as HTMLInputElement).value)}
         />
         <input
-          placeholder="MWF 10:00 AM - 10:50 AM | Baker Hall 200"
+          placeholder="Time, e.g. MWF 10:00 AM - 10:50 AM"
           value={pattern}
           onInput={(e) => setPattern((e.target as HTMLInputElement).value)}
         />
         <input
-          placeholder="Professor (optional)"
+          placeholder="📍 Building + room (optional)"
+          value={location}
+          onInput={(e) => setLocation((e.target as HTMLInputElement).value)}
+        />
+        <input
+          placeholder="👤 Professor (optional)"
           value={instructor}
           onInput={(e) => setInstructor((e.target as HTMLInputElement).value)}
           onKeyDown={(e) => e.key === 'Enter' && void add()}
