@@ -252,6 +252,16 @@ export interface AiHistoryEntry {
   degree?: DegreeProgram;
 }
 
+// ---------- Schedule scenarios ----------
+
+/** A saved candidate schedule ("Plan A" / "Plan B") for later compare/restore. */
+export interface Scenario {
+  id: string;
+  name: string;
+  snapshot: ScheduleSnapshot;
+  createdAt: number;
+}
+
 // ---------- Storage root ----------
 
 export interface StorageShape {
@@ -273,6 +283,8 @@ export interface StorageShape {
   reqOverrides: Record<string, ReqOverrideValue>;
   /** building coordinates for the campus map & walk-time warnings */
   campusMap: CampusMap;
+  /** saved candidate schedules (Plan A / Plan B) */
+  scenarios: Scenario[];
 }
 
 /**
@@ -296,4 +308,5 @@ export const STORAGE_DEFAULTS: StorageShape = {
   aiHistory: [],
   reqOverrides: {},
   campusMap: { school: null, buildings: {} },
+  scenarios: [],
 };

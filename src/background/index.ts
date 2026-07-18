@@ -20,6 +20,7 @@ import { fetchWalkingRoute, geocodeBuildings, setCampusMap } from './map';
 import { activateLicense, refreshLicense } from './billing';
 import { parseTranscriptText } from '../shared/transcript';
 import { aiCallStatus, isSupreme } from '../shared/plan';
+import { STORAGE_DEFAULTS } from '../shared/types';
 import type { AiFeature, AiHistoryEntry, DegreeProgram, StoredDegree } from '../shared/types';
 
 const AI_HISTORY_CAP = 50;
@@ -225,6 +226,58 @@ async function handle(req: ExtRequest, trusted: boolean): Promise<unknown> {
     case 'MAP_SET':
       await setCampusMap(req.map);
       return null;
+    case 'SCENARIO_SAVE': {
+      const scenario = {
+        id: crypto.randomUUID(),
+        name: req.name.trim() || 'Untitled plan',
+        snapshot: req.snapshot,
+        createdAt: Date.now(),
+      };
+      await updateStored('scenarios', (cur) => [...cur, scenario].slice(-20));
+      return scenario;
+    }
+    case 'SCENARIO_DELETE':
+      await updateStored('scenarios', (cur) => cur.filter((s) => s.id !== req.id));
+      return null;
+    case 'SCENARIO_LOAD': {
+      const { scenarios, schedule } = await getAllStored();
+      const hit = scenarios.find((s) => s.id === req.id);
+      if (!hit) throw new Error('That plan no longer exists.');
+      // Don't let a load destroy unsaved work: if the current schedule isn't
+      // stored in any scenario, stash it automatically first.
+      if (schedule && schedule.sections.length > 0) {
+        const cur = JSON.stringify(schedule.sections);
+        if (!scenarios.some((s) => JSON.stringify(s.snapshot.sections) === cur)) {
+          await updateStored('scenarios', (list) =>
+            [
+              ...list,
+              {
+                id: crypto.randomUUID(),
+                name: `Auto-saved before "${hit.name}"`,
+                snapshot: schedule,
+                createdAt: Date.now(),
+              },
+            ].slice(-20),
+          );
+        }
+      }
+      await setStored('schedule', { ...hit.snapshot, capturedAt: Date.now() });
+      return null;
+    }
+    case 'BACKUP_IMPORT': {
+      const data = req.data;
+      if (typeof data !== 'object' || data === null || typeof data.schemaVersion !== 'number') {
+        throw new Error("That file doesn't look like a Student Companion backup.");
+      }
+      // Restore only known keys so a crafted file can't plant extras.
+      const patch: Record<string, unknown> = {};
+      for (const key of Object.keys(STORAGE_DEFAULTS)) {
+        if (key in data) patch[key] = (data as Record<string, unknown>)[key];
+      }
+      await chrome.storage.local.set(patch);
+      await migrateStorage();
+      return { restored: Object.keys(patch) };
+    }
     case 'AI_TEST':
       // Deliberately ungated: a key-format/network diagnostic (4 max_tokens on
       // the cheapest model) has to work BEFORE the user upgrades, so they can

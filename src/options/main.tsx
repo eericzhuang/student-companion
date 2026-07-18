@@ -48,6 +48,7 @@ function App() {
       <TermSection settings={settings} patch={patch} />
       <CampusMapSection settings={settings} patch={patch} />
       <AdvancedSelectors settings={settings} patch={patch} />
+      <BackupSection />
       <FeedbackSection settings={settings} />
       <AdminSection settings={settings} patch={patch} />
       <p class="pl-muted" style={{ textAlign: 'center', marginTop: '18px' }}>
@@ -768,6 +769,99 @@ function CampusMapSection({ settings, patch }: SectionProps) {
  * a pre-filled email or a pre-filled GitHub issue — no backend, and the
  * diagnostics (version + plan) ride along automatically.
  */
+/**
+ * Full-data backup: everything lives in chrome.storage.local, so export is a
+ * plain JSON download and import restores it (known keys only, after an
+ * explicit confirmation). The file never leaves the user's machine.
+ */
+function BackupSection() {
+  const [pending, setPending] = useState<{ data: Record<string, unknown>; summary: string } | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+
+  const exportAll = async () => {
+    const all = await chrome.storage.local.get(null);
+    const blob = new Blob([JSON.stringify({ schemaVersion: 1, ...all }, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `student-companion-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    setNote('Backup downloaded. It stays on your computer — nothing is uploaded.');
+  };
+
+  const pickFile = (e: Event) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    void file.text().then((text) => {
+      try {
+        const data = JSON.parse(text) as Record<string, unknown>;
+        if (typeof data.schemaVersion !== 'number') throw new Error('bad');
+        const degrees = Object.keys((data.degrees as object) ?? {}).length;
+        const history = ((data.academicHistory as { courses?: unknown[] } | null)?.courses ?? []).length;
+        const sections = ((data.schedule as { sections?: unknown[] } | null)?.sections ?? []).length;
+        setPending({
+          data,
+          summary: `${degrees} degree(s), ${history} history course(s), ${sections} scheduled section(s)`,
+        });
+        setNote(null);
+      } catch {
+        setPending(null);
+        setNote("That file doesn't look like a Student Companion backup.");
+      }
+    });
+    (e.target as HTMLInputElement).value = '';
+  };
+
+  const restore = () => {
+    if (!pending) return;
+    void sendToBackground({ kind: 'BACKUP_IMPORT', data: pending.data })
+      .then(() => {
+        setPending(null);
+        setNote('Backup restored ✓ — reload any open Workday tabs to see it.');
+      })
+      .catch((err) => setNote(err instanceof Error ? err.message : String(err)));
+  };
+
+  return (
+    <div class="pl-card">
+      <h2>💾 Data backup</h2>
+      <p class="pl-muted">
+        Download everything (degrees, history, schedule, plans, settings) as one file, or restore
+        from a previous backup. The file stays on your computer.
+      </p>
+      <div class="pl-row">
+        <button class="pl-btn" onClick={() => void exportAll()}>
+          ⬇ Export backup
+        </button>
+        <label class="pl-btn" style={{ cursor: 'pointer' }}>
+          ⬆ Import backup…
+          <input type="file" accept="application/json,.json" style={{ display: 'none' }} onChange={pickFile} />
+        </label>
+      </div>
+      {pending && (
+        <div class="pl-card" style={{ marginTop: '8px', background: '#fef9c3' }}>
+          <p>
+            Restore <b>{pending.summary}</b>? This <b>replaces</b> the data currently in the
+            extension.
+          </p>
+          <div class="pl-row">
+            <button class="pl-btn danger" onClick={restore}>
+              Yes, replace my data
+            </button>
+            <button class="pl-btn" onClick={() => setPending(null)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      {note && <p class="pl-muted">{note}</p>}
+    </div>
+  );
+}
+
 function FeedbackSection({ settings }: { settings: Settings }) {
   const [kind, setKind] = useState<'problem' | 'suggestion'>('problem');
   const [text, setText] = useState('');

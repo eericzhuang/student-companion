@@ -83,6 +83,45 @@ const chromeStub = {
           const dist = Math.sqrt(dLat * dLat + dLng * dLng) * 1.22;
           return { ok: true, data: { distanceM: dist, durationMin: dist / 80, coords } };
         }
+        case 'SCENARIO_SAVE': {
+          const cur = (store.scenarios as unknown[]) ?? [];
+          const scenario = {
+            id: crypto.randomUUID(),
+            name: (req.name as string).trim() || 'Untitled plan',
+            snapshot: req.snapshot,
+            createdAt: Date.now(),
+          };
+          write('scenarios', [...cur, scenario].slice(-20));
+          return { ok: true, data: scenario };
+        }
+        case 'SCENARIO_DELETE': {
+          const cur = (store.scenarios as Array<{ id: string }>) ?? [];
+          write('scenarios', cur.filter((s) => s.id !== req.id));
+          return { ok: true };
+        }
+        case 'SCENARIO_LOAD': {
+          const cur = (store.scenarios as Array<{ id: string; name: string; snapshot: { sections: unknown[] } }>) ?? [];
+          const hit = cur.find((s) => s.id === req.id);
+          if (!hit) return { ok: false, error: 'That plan no longer exists.' };
+          const schedule = store.schedule as { sections: unknown[] } | null;
+          if (schedule && schedule.sections.length > 0) {
+            const json = JSON.stringify(schedule.sections);
+            if (!cur.some((s) => JSON.stringify(s.snapshot.sections) === json)) {
+              write('scenarios', [
+                ...cur,
+                { id: crypto.randomUUID(), name: `Auto-saved before "${hit.name}"`, snapshot: schedule, createdAt: Date.now() },
+              ].slice(-20));
+            }
+          }
+          write('schedule', { ...hit.snapshot, capturedAt: Date.now() });
+          return { ok: true };
+        }
+        case 'BACKUP_IMPORT': {
+          const data = req.data as Record<string, unknown>;
+          if (typeof data?.schemaVersion !== 'number') return { ok: false, error: 'Not a backup file.' };
+          for (const [k, v] of Object.entries(data)) write(k, v);
+          return { ok: true, data: { restored: Object.keys(data) } };
+        }
         case 'PLANNER_STATE_UPDATE':
           write('plannerState', req.state);
           return { ok: true };

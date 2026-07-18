@@ -14,11 +14,13 @@ import type {
   DayMask,
   Meeting,
   PanelState,
+  Scenario,
   ScheduleSnapshot,
   Section,
   Settings,
   TermConfig,
 } from '../../shared/types';
+import { scenarioMetrics } from '../../shared/scenario';
 import { getStored, onStoredChange } from '../../shared/storage';
 import { sendToBackground, type MapLookupResult, type RmpLookupResult } from '../../background/messages';
 import { computeFreeSlots, dayMaskToLabels, formatMinutes } from '../../shared/time';
@@ -42,7 +44,7 @@ import { isPro } from '../../shared/plan';
 /** Search-result section currently hovered (set by decorateRows). */
 export const ghostSection = signal<Section | null>(null);
 
-type CalView = 'grid' | 'free' | 'map' | 'edit';
+type CalView = 'grid' | 'free' | 'map' | 'plans' | 'edit';
 
 export function CalendarPanel() {
   const [schedule, setSchedule] = useState<ScheduleSnapshot | null>(null);
@@ -286,6 +288,9 @@ export function CalendarPanel() {
           <button class={view === 'map' ? 'active' : ''} onClick={() => setView('map')}>
             🗺 Route
           </button>
+          <button class={view === 'plans' ? 'active' : ''} onClick={() => setView('plans')}>
+            Plans
+          </button>
           <button class={view === 'edit' ? 'active' : ''} onClick={() => setView('edit')}>
             Edit
           </button>
@@ -294,7 +299,7 @@ export function CalendarPanel() {
       {selEvent && view === 'grid' && (
         <EventDetails section={selEvent.section} meeting={selEvent.meeting} onClose={() => setSelEvent(null)} />
       )}
-      {sections.length === 0 && view !== 'edit' ? (
+      {sections.length === 0 && view !== 'edit' && view !== 'plans' ? (
         <div class="wdc-empty">
           No saved schedule captured yet.
           <br />
@@ -313,6 +318,13 @@ export function CalendarPanel() {
         <FreeTimeList sections={sections} />
       ) : view === 'map' ? (
         <RouteMap sections={sections} campusMap={campusMap} transitions={transitions} />
+      ) : view === 'plans' ? (
+        <ScenarioList
+          schedule={schedule}
+          ratings={ratings}
+          campusMap={campusMap}
+          walkSpeed={walkSpeed}
+        />
       ) : (
         <ScheduleEditList sections={sections} />
       )}
@@ -762,6 +774,168 @@ function FreeTimeList({ sections }: { sections: Section[] }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+/**
+ * Plans tab: save the current schedule as a named scenario (Plan A / Plan B),
+ * compare saved plans side by side, and load one back into the calendar.
+ * Loading auto-stashes unsaved work as its own scenario first.
+ */
+function ScenarioList({
+  schedule,
+  ratings,
+  campusMap,
+  walkSpeed,
+}: {
+  schedule: ScheduleSnapshot | null;
+  ratings: Map<string, number | null>;
+  campusMap: CampusMap | null;
+  walkSpeed: number;
+}) {
+  const [scenarios, setScenarios] = useState<Scenario[]>([]);
+  const [name, setName] = useState('');
+  const [extraRatings, setExtraRatings] = useState<Map<string, number | null>>(new Map());
+
+  useEffect(() => {
+    void getStored('scenarios').then(setScenarios);
+    return onStoredChange('scenarios', setScenarios);
+  }, []);
+
+  // Scenario sections may name professors the current schedule doesn't —
+  // fetch their (cached) ratings so the compare table stays honest.
+  useEffect(() => {
+    const names = [
+      ...new Set(
+        scenarios
+          .flatMap((sc) => sc.snapshot.sections.map((s) => s.instructor))
+          .filter((n): n is string => !!n && !ratings.has(n)),
+      ),
+    ];
+    if (names.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      const next = new Map<string, number | null>();
+      for (const n of names) {
+        try {
+          const res = await sendToBackground<RmpLookupResult>({ kind: 'RMP_LOOKUP', instructorName: n });
+          next.set(n, res.entry?.teacher?.avgRating ?? null);
+        } catch {
+          next.set(n, null);
+        }
+      }
+      if (!cancelled) setExtraRatings(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [scenarios.map((s) => s.id).join('|')]);
+
+  const allRatings = useMemo(() => {
+    const merged = new Map(ratings);
+    for (const [k, v] of extraRatings) if (!merged.has(k)) merged.set(k, v);
+    return merged;
+  }, [ratings, extraRatings]);
+
+  const buildings = campusMap?.buildings ?? {};
+  const rows = useMemo(() => {
+    const list: Array<{ id: string | null; name: string; sections: Section[]; createdAt: number | null }> = [];
+    if (schedule && schedule.sections.length > 0)
+      list.push({ id: null, name: 'Current', sections: schedule.sections, createdAt: null });
+    for (const sc of scenarios)
+      list.push({ id: sc.id, name: sc.name, sections: sc.snapshot.sections, createdAt: sc.createdAt });
+    return list.map((r) => ({ ...r, m: scenarioMetrics(r.sections, allRatings, buildings, walkSpeed) }));
+  }, [schedule, scenarios, allRatings, buildings, walkSpeed]);
+
+  const save = () => {
+    if (!schedule || schedule.sections.length === 0) return;
+    void sendToBackground({ kind: 'SCENARIO_SAVE', name: name.trim() || `Plan ${scenarios.length + 1}`, snapshot: schedule })
+      .then(() => setName(''))
+      .catch(() => {});
+  };
+
+  return (
+    <div class="wdc-plans">
+      <div class="wdc-plans-save">
+        <input
+          placeholder={`Name this plan, e.g. "Plan A"`}
+          value={name}
+          onInput={(e) => setName((e.target as HTMLInputElement).value)}
+          onKeyDown={(e) => e.key === 'Enter' && save()}
+        />
+        <button
+          class="wdc-capture-btn wdc-map-btn"
+          disabled={!schedule || schedule.sections.length === 0}
+          onClick={save}
+          title="Save the current schedule as a plan you can come back to"
+        >
+          💾 Save current
+        </button>
+      </div>
+      {rows.length === 0 ? (
+        <div class="wdc-empty">Nothing to compare yet — build a schedule, then save it here.</div>
+      ) : (
+        <table class="wdc-plans-table">
+          <thead>
+            <tr>
+              <th>Plan</th>
+              <th title="Sections">#</th>
+              <th title="Total credits (unknown credits count 0)">Cr</th>
+              <th title="Average professor rating">★</th>
+              <th title="Earliest class start">Earliest</th>
+              <th title="Total walking per week (needs located buildings)">Walk/wk</th>
+              <th title="Legs at risk of being late">⚠</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr class={r.id === null ? 'wdc-plans-current' : ''}>
+                <td class="wdc-plans-name" title={r.createdAt ? new Date(r.createdAt).toLocaleString() : 'live schedule'}>
+                  {r.name}
+                </td>
+                <td>{r.m.sections}</td>
+                <td>{r.m.credits || '—'}</td>
+                <td>
+                  {r.m.avgRating != null ? (
+                    <b class={`wdc-rate-${ratingClass(r.m.avgRating)}`}>{r.m.avgRating.toFixed(1)}</b>
+                  ) : (
+                    '—'
+                  )}
+                </td>
+                <td>{r.m.earliest ?? '—'}</td>
+                <td>{r.m.walkMinPerWeek != null ? `~${Math.round(r.m.walkMinPerWeek)} min` : '—'}</td>
+                <td>{r.m.riskyLegs > 0 ? `⚠${r.m.riskyLegs}` : '·'}</td>
+                <td class="wdc-plans-actions">
+                  {r.id !== null && (
+                    <>
+                      <button
+                        class="wdc-link-btn"
+                        title="Load this plan into the calendar (current unsaved work is auto-stashed)"
+                        onClick={() => void sendToBackground({ kind: 'SCENARIO_LOAD', id: r.id! }).catch(() => {})}
+                      >
+                        load
+                      </button>{' '}
+                      <button
+                        class="wdc-edit-del"
+                        title="Delete this plan"
+                        onClick={() => void sendToBackground({ kind: 'SCENARIO_DELETE', id: r.id! }).catch(() => {})}
+                      >
+                        ✕
+                      </button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <div class="wdc-map-note wdc-map-fine">
+        Ratings/walk columns use the same data as the calendar — locate buildings in 🗺 Route for
+        walk numbers. Loading a plan replaces the calendar; unsaved work is stashed automatically.
+      </div>
     </div>
   );
 }

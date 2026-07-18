@@ -26,6 +26,13 @@ All notable user-facing changes to the extension.
   and remembered (editable in Options → Future terms).
 - Ratings are color-coded everywhere (green ≥3.8, amber ≥2.8, red below),
   and the calendar's Edit view can fix a section's professor and location.
+- **🗂 Plans (schedule scenarios)**: save the current schedule as "Plan A",
+  "Plan B", …, compare plans side by side (credits, average professor rating,
+  earliest class, weekly walking, risky legs) and load one back with a click —
+  unsaved work is auto-stashed first, so nothing is ever lost.
+- **💾 Data backup** in Options: export everything (degrees, history,
+  schedule, plans, settings) as one JSON file and restore it later — the file
+  never leaves your computer.
 - **💬 Feedback** section in Options — report problems or send suggestions by
   pre-filled email or GitHub issue.
 - **RateMyProfessors ratings** inline next to instructor names, plus a

@@ -50,6 +50,12 @@ export type ExtRequest =
   | { kind: 'MAP_GEOCODE'; buildings: string[] }
   | { kind: 'MAP_ROUTE'; from: { lat: number; lng: number }; to: { lat: number; lng: number } }
   | { kind: 'MAP_SET'; map: CampusMap }
+  // --- schedule scenarios (Plan A / Plan B) ---
+  | { kind: 'SCENARIO_SAVE'; name: string; snapshot: ScheduleSnapshot }
+  | { kind: 'SCENARIO_DELETE'; id: string }
+  | { kind: 'SCENARIO_LOAD'; id: string }
+  // --- full-data backup restore (from Options) ---
+  | { kind: 'BACKUP_IMPORT'; data: Record<string, unknown> }
   | { kind: 'AI_TEST' }
   // --- billing (only when a billing backend is configured) ---
   | { kind: 'LICENSE_ACTIVATE'; code: string }
