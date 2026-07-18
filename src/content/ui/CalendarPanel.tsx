@@ -13,6 +13,7 @@ import type {
   BuilderPrefs,
   CampusMap,
   DayMask,
+  FinalExam,
   Meeting,
   PanelState,
   Scenario,
@@ -36,7 +37,8 @@ import {
 import { ratingClass, rmpProfessorUrl } from '../../shared/rmpUrl';
 import { cleanInstructorName, displayInstructorName } from '../../shared/fuzzy';
 import { cleanSectionTitle } from '../../shared/schedule';
-import { addManualSection, removeSection, renameSection, updateSectionDetails } from './scheduleEdit';
+import { addFinal, addManualSection, removeFinal, removeSection, renameSection, updateSectionDetails } from './scheduleEdit';
+import { finalConflictIds, formatFinalDate, sortFinals, timeInputToMinutes } from '../../shared/finals';
 import { exportScheduleImage } from './exportImage';
 import { buildIcs, defaultTermStart } from '../../shared/ics';
 import { useDraggable, type Pos } from './useDraggable';
@@ -167,7 +169,12 @@ export function CalendarPanel() {
     terms.find((t) => schedule?.termLabel && t.label === schedule.termLabel) ?? terms[0] ?? null;
 
   const downloadIcs = (termStart?: string, termEnd?: string) => {
-    const ics = buildIcs(sections, { termStart, termEnd, termLabel: schedule?.termLabel ?? null });
+    const ics = buildIcs(sections, {
+      termStart,
+      termEnd,
+      termLabel: schedule?.termLabel ?? null,
+      finals: schedule?.finals ?? [],
+    });
     const blob = new Blob([ics], { type: 'text/calendar' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -321,14 +328,17 @@ export function CalendarPanel() {
           Open your <b>saved schedule</b> page in Workday, or add courses in <b>Edit</b>.
         </div>
       ) : view === 'grid' ? (
-        <WeekGrid
-          sections={preview ? preview.sections : sections}
-          ghost={preview ? null : ghostSection.value}
-          warnings={preview ? undefined : gridWarnings}
-          scale={gridScale}
-          ratings={ratings}
-          onEventClick={(section, meeting) => setSelEvent({ section, meeting })}
-        />
+        <>
+          <WeekGrid
+            sections={preview ? preview.sections : sections}
+            ghost={preview ? null : ghostSection.value}
+            warnings={preview ? undefined : gridWarnings}
+            scale={gridScale}
+            ratings={ratings}
+            onEventClick={(section, meeting) => setSelEvent({ section, meeting })}
+          />
+          {!preview && (schedule?.finals?.length ?? 0) > 0 && <FinalsStrip finals={schedule!.finals!} />}
+        </>
       ) : view === 'free' ? (
         <FreeTimeList sections={sections} />
       ) : view === 'map' ? (
@@ -352,7 +362,7 @@ export function CalendarPanel() {
           walkSpeed={walkSpeed}
         />
       ) : (
-        <ScheduleEditList sections={sections} />
+        <ScheduleEditList sections={sections} finals={schedule?.finals ?? []} />
       )}
     </div>
   );
@@ -680,7 +690,7 @@ function LegPath({
 }
 
 /** Add / remove / rename captured sections by hand. */
-function ScheduleEditList({ sections }: { sections: Section[] }) {
+function ScheduleEditList({ sections, finals }: { sections: Section[]; finals: FinalExam[] }) {
   const [code, setCode] = useState('');
   const [pattern, setPattern] = useState('');
   const [location, setLocation] = useState('');
@@ -775,6 +785,111 @@ function ScheduleEditList({ sections }: { sections: Section[] }) {
           ＋ Add to calendar
         </button>
       </div>
+      <FinalsEditor sections={sections} finals={finals} />
+    </div>
+  );
+}
+
+/**
+ * Final exams: date-specific sittings with their own clash detection —
+ * finals rarely follow the weekly pattern, so they're entered separately.
+ */
+function FinalsEditor({ sections, finals }: { sections: Section[]; finals: FinalExam[] }) {
+  const [code, setCode] = useState('');
+  const [date, setDate] = useState('');
+  const [start, setStart] = useState('09:00');
+  const [end, setEnd] = useState('11:30');
+  const [location, setLocation] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const conflicts = finalConflictIds(finals);
+  const sorted = sortFinals(finals);
+
+  const add = async () => {
+    const s = timeInputToMinutes(start);
+    const e = timeInputToMinutes(end);
+    if (s === null || e === null) {
+      setError('Pick the start and end times.');
+      return;
+    }
+    const err = await addFinal(code, date, s, e, location);
+    if (err) {
+      setError(err);
+      return;
+    }
+    setError(null);
+    setCode('');
+    setDate('');
+    setLocation('');
+  };
+
+  return (
+    <div class="wdc-finals">
+      <div class="wdc-edit-add-title">🎓 Final exams</div>
+      {sorted.map((f) => (
+        <div class={`wdc-finals-row${conflicts.has(f.id) ? ' clash' : ''}`}>
+          <span class="wdc-finals-when">
+            {formatFinalDate(f.date)} · {formatMinutes(f.startMin)}–{formatMinutes(f.endMin)}
+          </span>
+          <b>{f.code}</b>
+          <span class="wdc-finals-loc">{f.location ?? ''}</span>
+          {conflicts.has(f.id) && (
+            <span title="Overlaps another final on the same day">⚠</span>
+          )}
+          <button class="wdc-edit-del" title="Remove" onClick={() => void removeFinal(f.id)}>
+            ✕
+          </button>
+        </div>
+      ))}
+      {finals.length === 0 && (
+        <div class="wdc-freetime-none">No finals entered yet — add them when the exam schedule is out.</div>
+      )}
+      <div class="wdc-finals-add">
+        <input
+          class="wdc-finals-code"
+          placeholder="Course"
+          list="wdc-finals-codes"
+          value={code}
+          onInput={(e) => setCode((e.target as HTMLInputElement).value)}
+        />
+        <datalist id="wdc-finals-codes">
+          {sections.map((s) => (
+            <option value={s.courseCode} />
+          ))}
+        </datalist>
+        <input type="date" value={date} onInput={(e) => setDate((e.target as HTMLInputElement).value)} />
+        <input type="time" value={start} onInput={(e) => setStart((e.target as HTMLInputElement).value)} />
+        <input type="time" value={end} onInput={(e) => setEnd((e.target as HTMLInputElement).value)} />
+        <input
+          class="wdc-finals-locin"
+          placeholder="📍 (optional)"
+          value={location}
+          onInput={(e) => setLocation((e.target as HTMLInputElement).value)}
+          onKeyDown={(e) => e.key === 'Enter' && void add()}
+        />
+        <button class="wdc-capture-btn wdc-map-btn" onClick={() => void add()}>
+          ＋
+        </button>
+      </div>
+      {error && <div class="wdc-edit-error">{error}</div>}
+    </div>
+  );
+}
+
+/** Compact chronological finals list under the week grid (grid view). */
+function FinalsStrip({ finals }: { finals: FinalExam[] }) {
+  const conflicts = finalConflictIds(finals);
+  return (
+    <div class="wdc-finals-strip">
+      <b>🎓 Finals:</b>{' '}
+      {sortFinals(finals).map((f, i) => (
+        <span class={conflicts.has(f.id) ? 'wdc-finals-clash' : ''}>
+          {i > 0 && ' · '}
+          {formatFinalDate(f.date)} {formatMinutes(f.startMin)} {f.code}
+          {conflicts.has(f.id) && ' ⚠'}
+        </span>
+      ))}
+      {conflicts.size > 0 && <span class="wdc-finals-clash"> — two finals overlap!</span>}
     </div>
   );
 }

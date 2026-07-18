@@ -32,11 +32,24 @@ export interface Section {
   meetings: Meeting[];
 }
 
+/** A one-off final-exam sitting (date-specific, unlike weekly meetings). */
+export interface FinalExam {
+  id: string;
+  code: string;
+  /** ISO yyyy-mm-dd */
+  date: string;
+  startMin: number;
+  endMin: number;
+  location?: string;
+}
+
 export interface ScheduleSnapshot {
   termLabel: string | null;
   sections: Section[];
   capturedAt: number;
   source: 'intercept' | 'dom' | 'upload';
+  /** final-exam sittings entered by the user (kept across schedule edits) */
+  finals?: FinalExam[];
 }
 
 export type CourseStatus = 'completed' | 'in-progress' | 'withdrawn' | 'unknown';

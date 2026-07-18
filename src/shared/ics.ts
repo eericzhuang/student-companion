@@ -4,7 +4,7 @@
  * Times are floating local (no TZID) — a 10 AM class is 10 AM wherever the
  * calendar lives, which is what students expect.
  */
-import { DAYS, type DayMask, type Section } from './types';
+import { DAYS, type DayMask, type FinalExam, type Section } from './types';
 import { cleanSectionTitle } from './schedule';
 import { displayInstructorName } from './fuzzy';
 
@@ -74,6 +74,8 @@ export interface IcsOptions {
   /** ISO yyyy-mm-dd; last day of classes. Defaults to 16 weeks after start. */
   termEnd?: string;
   termLabel?: string | null;
+  /** one-off final-exam sittings, exported as single (non-recurring) events */
+  finals?: FinalExam[];
   /** injectable "today" for tests */
   now?: Date;
 }
@@ -122,6 +124,19 @@ export function buildIcs(sections: Section[], opts: IcsOptions = {}): string {
       if (s.instructor) lines.push(`DESCRIPTION:${escapeText(`Professor: ${displayInstructorName(s.instructor)}`)}`);
       lines.push('END:VEVENT');
     });
+  }
+
+  for (const f of opts.finals ?? []) {
+    const d = parseIsoDate(f.date);
+    if (!d) continue;
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:${escapeText(f.id)}@student-companion`);
+    lines.push(`DTSTAMP:${stamp}`);
+    lines.push(`DTSTART:${dt(d, f.startMin)}`);
+    lines.push(`DTEND:${dt(d, f.endMin)}`);
+    lines.push(`SUMMARY:${escapeText(`🎓 FINAL — ${f.code}`)}`);
+    if (f.location) lines.push(`LOCATION:${escapeText(f.location)}`);
+    lines.push('END:VEVENT');
   }
 
   lines.push('END:VCALENDAR');

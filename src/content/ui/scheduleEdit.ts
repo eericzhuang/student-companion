@@ -7,7 +7,7 @@ import { getStored } from '../../shared/storage';
 import { sendToBackground } from '../../background/messages';
 import { parseMeetingPatterns } from '../../shared/time';
 import { mergeSections } from '../../shared/schedule';
-import type { Section } from '../../shared/types';
+import type { FinalExam, Section } from '../../shared/types';
 
 // Serialize edits: each one is a read-modify-write on the stored schedule, so
 // two quick edits (e.g. professor then location) must not read the same
@@ -19,7 +19,7 @@ function enqueue<T>(fn: () => Promise<T>): Promise<T> {
   return run;
 }
 
-async function persist(sections: Section[]): Promise<void> {
+async function persist(sections: Section[], finals?: FinalExam[]): Promise<void> {
   const current = await getStored('schedule');
   await sendToBackground({
     kind: 'SCHEDULE_SET',
@@ -28,6 +28,7 @@ async function persist(sections: Section[]): Promise<void> {
       sections,
       capturedAt: Date.now(),
       source: 'dom',
+      finals: finals ?? current?.finals ?? [],
     },
   }).catch(() => {});
 }
@@ -99,5 +100,39 @@ export async function updateSectionDetails(
         };
       }),
     );
+  });
+}
+
+/** Add a final-exam sitting. Returns an error string or null. */
+export async function addFinal(
+  code: string,
+  date: string,
+  startMin: number,
+  endMin: number,
+  location?: string,
+): Promise<string | null> {
+  const c = code.trim().replace(/\s+/g, ' ');
+  if (!c) return 'Enter a course code.';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return 'Pick the exam date.';
+  if (endMin <= startMin) return 'The end time must be after the start.';
+  return enqueue(async () => {
+    const current = await getStored('schedule');
+    const final: FinalExam = {
+      id: `final:${c}:${Date.now()}`,
+      code: c,
+      date,
+      startMin,
+      endMin,
+      location: location?.trim() || undefined,
+    };
+    await persist(current?.sections ?? [], [...(current?.finals ?? []), final]);
+    return null;
+  });
+}
+
+export async function removeFinal(id: string): Promise<void> {
+  return enqueue(async () => {
+    const current = await getStored('schedule');
+    await persist(current?.sections ?? [], (current?.finals ?? []).filter((f) => f.id !== id));
   });
 }
