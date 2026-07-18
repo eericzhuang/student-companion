@@ -12,14 +12,18 @@ import {
   scopeReqOverrides,
 } from '../../planner/engine/requirements';
 import { computeLevel, effectiveThemeLevel, RANKS } from '../../planner/engine/levels';
+import { isDark } from '../../shared/appearance';
 
 const roots = new Set<HTMLElement>();
 let accent: string | null = null;
+let dark = false;
 let started = false;
+const mql = window.matchMedia('(prefers-color-scheme: dark)');
 
 function paint(el: HTMLElement): void {
   if (accent) el.style.setProperty('--wdc-accent', accent);
   else el.style.removeProperty('--wdc-accent');
+  el.classList.toggle('wdc-dark', dark);
 }
 
 async function recompute(): Promise<void> {
@@ -43,6 +47,7 @@ async function recompute(): Promise<void> {
   }
   level = effectiveThemeLevel(level, store.settings);
   accent = level > 1 ? RANKS[level - 1]!.accent : null;
+  dark = isDark(store.settings.appearance, mql.matches);
   for (const el of roots) paint(el);
 }
 
@@ -53,6 +58,7 @@ export function themeRoot(el: HTMLElement): void {
   if (!started) {
     started = true;
     void recompute();
+    mql.addEventListener('change', () => void recompute());
     for (const key of [
       'degrees',
       'academicHistory',

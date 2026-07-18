@@ -39,6 +39,18 @@ All notable user-facing changes to the extension.
 - **💾 Data backup** in Options: export everything (degrees, history,
   schedule, plans, settings) as one JSON file and restore it later — the file
   never leaves your computer.
+- **🎓 Finals week**: enter exam sittings (date, time, room) in Edit — same-day
+  overlaps are flagged, a chronological finals strip shows under the calendar,
+  and finals export to your calendar app with everything else.
+- **👥 Compare with a friend**: exchange tiny schedule files (course codes and
+  times only — nothing else, and never uploaded) to see shared classes, mutual
+  free time, and their week dashed over yours.
+- **🕸 Prerequisite chain graph**: the Prereqs tab draws your courses as an
+  unlock graph, colored by status — bottleneck courses stand out at a glance.
+- **⏰ Registration reminders**: set when your window opens (per term, in
+  Options) and get notified 24 hours and 10 minutes before.
+- **🌙 Dark mode**: match your system or force light/dark — panels on Workday,
+  the planner, and Options all follow.
 - **💬 Feedback** section in Options — report problems or send suggestions by
   pre-filled email or GitHub issue.
 - **RateMyProfessors ratings** inline next to instructor names, plus a

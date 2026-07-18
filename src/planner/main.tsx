@@ -2,6 +2,7 @@
  * Degree Planner page: progress per degree, overlap analysis, term board,
  * and the import -> review flow.
  */
+import { watchPageDark } from '../shared/appearance';
 import { render } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type {
@@ -562,4 +563,5 @@ function App() {
   );
 }
 
+watchPageDark();
 render(<App />, document.getElementById('app')!);

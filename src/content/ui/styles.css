@@ -1239,3 +1239,78 @@
   color: #334155;
   z-index: 0;
 }
+
+/* ---- 🌙 Dark mode (class painted on each shadow root by theme.ts) ---- */
+
+.wdc-dark .wdc-panel,
+.wdc-dark .wdc-rmp-panel,
+.wdc-dark .wdc-capture {
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+.wdc-dark .wdc-panel-sub,
+.wdc-dark .wdc-capture-status,
+.wdc-dark .wdc-capture-hint,
+.wdc-dark .wdc-capture-sub { color: #94a3b8; }
+.wdc-dark .wdc-view-toggle button,
+.wdc-dark .wdc-map-days button {
+  background: #0f172a;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+.wdc-dark .wdc-empty,
+.wdc-dark .wdc-freetime-none { color: #94a3b8; }
+.wdc-dark .wdc-map-note { color: #94a3b8; }
+.wdc-dark .wdc-hour-line { border-color: #283548; }
+.wdc-dark .wdc-grid-daylabel,
+.wdc-dark .wdc-hour-label { color: #94a3b8; }
+.wdc-dark input,
+.wdc-dark select,
+.wdc-dark textarea {
+  background: #0f172a;
+  border-color: #334155 !important;
+  color: #e2e8f0;
+}
+.wdc-dark .wdc-rmp-item,
+.wdc-dark .wdc-rmp-add,
+.wdc-dark .wdc-capture-actions,
+.wdc-dark .wdc-finals-strip { border-color: #283548; }
+.wdc-dark .wdc-rmp-item-head:hover { background: #263349; }
+.wdc-dark .wdc-rmp-item-body,
+.wdc-dark .wdc-capture-diag { background: #16223a; color: #cbd5e1; }
+.wdc-dark .wdc-itin-stop,
+.wdc-dark .wdc-build-card,
+.wdc-dark .wdc-finals,
+.wdc-dark .wdc-friend,
+.wdc-dark .wdc-plans-current,
+.wdc-dark .wdc-ics-form,
+.wdc-dark .wdc-capture-addcourse,
+.wdc-dark .wdc-leg-path,
+.wdc-dark .wdc-edit-item {
+  background: #16223a;
+  border-color: #283548;
+  color: #d5deeb;
+}
+.wdc-dark .wdc-ics-form { border-bottom-color: #283548; }
+.wdc-dark .wdc-plans-table th { color: #94a3b8; border-color: #334155; }
+.wdc-dark .wdc-plans-table td { border-color: #283548; }
+.wdc-dark .wdc-edit-time,
+.wdc-dark .wdc-build-parts,
+.wdc-dark .wdc-build-pick,
+.wdc-dark .wdc-finals-when,
+.wdc-dark .wdc-finals-loc,
+.wdc-dark .wdc-itin-time { color: #94a3b8; }
+.wdc-dark .wdc-build-sec,
+.wdc-dark .wdc-friend-result,
+.wdc-dark .wdc-build-prefs,
+.wdc-dark .wdc-itin-leg { color: #cbd5e1; }
+.wdc-dark .wdc-preview-banner { background: #3a3417; border-color: #6b5d1a; color: #fde68a; }
+.wdc-dark .wdc-finals-row.clash { background: #3b1a1a; }
+.wdc-dark .wdc-block-friend {
+  background: rgba(148, 163, 184, 0.22) !important;
+  border-color: #94a3b8;
+  color: #e2e8f0;
+}
+.wdc-dark .wdc-capture-toast { background: #103524; border-color: #14532d; color: #86efac; }
+.wdc-dark .wdc-map-located { color: #4ade80; }

@@ -1277,3 +1277,50 @@ table.pl-table th { color: #475569; font-size: 12px; }
   background: #fbfcfe;
   padding: 4px;
 }
+
+/* ---- 🌙 Dark mode (html.pl-dark, kept in sync by shared/appearance.ts) ---- */
+
+.pl-dark body { background: #0b1220; color: #e2e8f0; }
+.pl-dark .pl-card { background: #1e293b; border-color: #334155; }
+.pl-dark .pl-muted { color: #94a3b8; }
+.pl-dark .pl-tab { background: #1e293b; color: #cbd5e1; }
+.pl-dark .pl-tab.active { background: #0f4c81; color: #fff; }
+.pl-dark input[type='text'],
+.pl-dark input[type='url'],
+.pl-dark input[type='number'],
+.pl-dark input[type='password'],
+.pl-dark input[type='date'],
+.pl-dark input[type='datetime-local'],
+.pl-dark textarea,
+.pl-dark select {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+.pl-dark table.pl-table th, .pl-dark table.pl-table td { border-color: #283548; }
+.pl-dark table.pl-table th { color: #94a3b8; }
+.pl-dark .pl-group { border-color: #283548; }
+.pl-dark .pl-progressbar { background: #283548; }
+.pl-dark .pl-term { background: #16223a; border-color: #283548; }
+.pl-dark .pl-course-card { background: #1e293b; border-color: #334155; }
+.pl-dark .pl-chat { background: #0f172a; border-color: #283548; }
+.pl-dark .pl-chat-turn.assistant .pl-chat-bubble { background: #1e293b; border-color: #334155; }
+.pl-dark .pl-gpa-strip { background: #16223a; border-color: #283548; color: #cbd5e1; }
+.pl-dark .pl-prereq-scroll { background: #0f172a; border-color: #283548; }
+.pl-dark .pl-legend { color: #94a3b8; }
+.pl-dark .pl-link-inline { color: #7fb3e3; }
+.pl-dark .pl-guide { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+.pl-dark .pl-guide-body { color: #cbd5e1; }
+.pl-dark .pl-advice-summary { background: #16223a; border-color: #1e3a5f; color: #dbeafe; }
+.pl-dark .pl-advice-course { background: #16223a; }
+.pl-dark button.pl-btn.secondary { background: #334155; color: #e2e8f0; }
+
+/* dark-mode fixes for chrome that keeps dark text: header + level-1 hero
+   (ranks 2+ keep their own light gradient tiles, where dark text is right) */
+.pl-dark .pl-header h1 { color: #e2e8f0; }
+.pl-dark .pl-lv-hero.pl-lv-1 { background: #1e293b; border-color: #334155; }
+.pl-dark .pl-lv-hero.pl-lv-1 .pl-lv-title { color: #e2e8f0; }
+.pl-dark .pl-lv-hero.pl-lv-1 .pl-lv-medal-inner { background: #0f172a; }
+.pl-dark .pl-lv-hero.pl-lv-1 .pl-lv-meta { color: #94a3b8; }
+.pl-dark .pl-lv-journey { background: #1e293b; border-color: #334155; }
+.pl-dark .pl-lv-xprules { color: #94a3b8; }

@@ -213,6 +213,8 @@ export interface Settings {
   walkSpeedKmh?: number;
   /** schedule-builder preference weights (each 0–2; see shared/builder.ts) */
   builderPrefs?: BuilderPrefs;
+  /** color scheme: follow the system (default), or force light/dark */
+  appearance?: 'auto' | 'light' | 'dark';
 }
 
 /** How much each signal matters when ranking generated schedules (0 = ignore). */

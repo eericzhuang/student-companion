@@ -2,6 +2,7 @@
  * Options page: RMP school picker, Claude API key, model choice, feature
  * toggles, future terms, and advanced selector overrides.
  */
+import { watchPageDark } from '../shared/appearance';
 import { render } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import type { AcademicHistory, CampusMap, HistoryCourse, RmpSchool, Settings, TermConfig } from '../shared/types';
@@ -98,6 +99,20 @@ function FeatureToggles({ settings, patch }: SectionProps) {
         />{' '}
         Show the floating “Capture” button on Workday pages
       </label>
+      <div style={{ margin: '10px 0 2px' }}>
+        🌙 Appearance:{' '}
+        {(['auto', 'light', 'dark'] as const).map((a) => (
+          <label style={{ marginRight: '12px' }}>
+            <input
+              type="radio"
+              name="pl-appearance"
+              checked={(settings.appearance ?? 'auto') === a}
+              onChange={() => void patch({ appearance: a })}
+            />{' '}
+            {a === 'auto' ? 'Match system' : a === 'light' ? 'Light' : 'Dark'}
+          </label>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1003,4 +1018,5 @@ function AdminSection({ settings, patch }: SectionProps) {
   );
 }
 
+watchPageDark();
 render(<App />, document.getElementById('app')!);

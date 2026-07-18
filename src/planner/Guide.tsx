@@ -87,8 +87,13 @@ const STEPS: Step[] = [
   },
   {
     icon: '🗂',
-    title: 'Plans, exports & backup',
-    body: 'The Plans tab compares saved schedules side by side (credits, ratings, walking) and swaps between them safely. Export the calendar as a 📷 image or 📆 .ics for Google/Apple/Outlook, and back up all your data from ⚙ Options. Enjoy! 🎉',
+    title: 'Plans, friends & finals',
+    body: 'The Plans tab compares saved schedules side by side and can overlay a friend\'s schedule (file exchange, nothing uploaded) to find mutual free time. Track final exams with clash warnings in Edit, and export the calendar as a 📷 image or 📆 .ics file.',
+  },
+  {
+    icon: '⚙',
+    title: 'Make it yours',
+    body: 'In ⚙ Options: 🌙 dark mode, ⏰ registration reminders (24 h + 10 min before your window opens), walking speed, campus building coordinates, and a one-file backup of all your data. Enjoy! 🎉',
   },
 ];
 
