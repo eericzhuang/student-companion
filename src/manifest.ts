@@ -37,7 +37,8 @@ export default defineManifest({
   action: {
     default_title: 'Student Companion for Workday',
   },
-  permissions: ['storage', 'alarms'],
+  // notifications: registration-window reminders the user sets per term
+  permissions: ['storage', 'alarms', 'notifications'],
   host_permissions: [
     'https://*.myworkday.com/*',
     'https://www.ratemyprofessors.com/*',

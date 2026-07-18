@@ -535,6 +535,19 @@ function TermSection({ settings, patch }: SectionProps) {
               <td title="Last day of classes (used for calendar export)">
                 <input type="date" value={t.endDate ?? ''} onChange={(e) => setDate('endDate', (e.target as HTMLInputElement).value)} />
               </td>
+              <td title="When your registration window opens — you'll get a reminder 24 h and 10 min before">
+                <input
+                  type="datetime-local"
+                  value={t.registrationAt ?? ''}
+                  onChange={(e) =>
+                    void patch({
+                      terms: settings.terms.map((x) =>
+                        x.id === t.id ? { ...x, registrationAt: (e.target as HTMLInputElement).value || undefined } : x,
+                      ),
+                    })
+                  }
+                />
+              </td>
               <td style={{ width: '40px' }}>
                 <button
                   class="pl-btn danger"
@@ -548,7 +561,10 @@ function TermSection({ settings, patch }: SectionProps) {
         })}
       </table>
       {settings.terms.length > 0 && (
-        <p class="pl-muted">Term start/end dates power the calendar 📆 .ics export (they're optional).</p>
+        <p class="pl-muted">
+          All optional: start/end dates power the calendar 📆 .ics export; setting when
+          registration opens gets you a ⏰ reminder 24 hours and 10 minutes before.
+        </p>
       )}
       <div class="pl-row" style={{ marginTop: '8px' }}>
         <input

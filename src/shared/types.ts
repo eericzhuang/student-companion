@@ -174,6 +174,8 @@ export interface TermConfig {
   /** ISO yyyy-mm-dd first/last day of classes — used for calendar (.ics) export */
   startDate?: string;
   endDate?: string;
+  /** datetime-local value ("2026-11-05T08:00") when registration opens — fires reminders */
+  registrationAt?: string;
 }
 
 export interface PanelState {

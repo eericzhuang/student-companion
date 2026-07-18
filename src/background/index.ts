@@ -17,6 +17,7 @@ import {
 } from './claude/client';
 import { heuristicParseDegree } from './degreeHeuristic';
 import { fetchWalkingRoute, geocodeBuildings, setCampusMap } from './map';
+import { handleRegistrationAlarm, REG_ALARM_PREFIX, syncRegistrationAlarms } from './reminders';
 import { activateLicense, refreshLicense } from './billing';
 import { parseTranscriptText } from '../shared/transcript';
 import { aiCallStatus, isSupreme } from '../shared/plan';
@@ -52,6 +53,7 @@ function summarizeDegree(d: { name: string; totalCredits: number | null; groups:
 
 chrome.runtime.onInstalled.addListener((details) => {
   void migrateStorage();
+  void syncRegistrationAlarms();
   void chrome.alarms.create('rmp-cache-sweep', { periodInMinutes: 24 * 60 });
   // Re-verify the paid subscription daily (no-op in free-beta mode).
   void chrome.alarms.create('license-refresh', { periodInMinutes: 24 * 60 });
@@ -64,7 +66,12 @@ chrome.runtime.onInstalled.addListener((details) => {
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'rmp-cache-sweep') void sweepCache();
   if (alarm.name === 'license-refresh') void refreshLicense();
+  if (alarm.name.startsWith(REG_ALARM_PREFIX)) void handleRegistrationAlarm(alarm.name);
 });
+
+// Alarms persist across worker restarts, but re-sync on browser startup in
+// case terms were edited while alarms were pending (belt and suspenders).
+chrome.runtime.onStartup.addListener(() => void syncRegistrationAlarms());
 
 // Open the planner page when the toolbar icon is clicked
 chrome.action.onClicked.addListener(() => {
@@ -154,6 +161,8 @@ async function handle(req: ExtRequest, trusted: boolean): Promise<unknown> {
         delete patch.licenseToken;
       }
       await updateStored('settings', (s) => ({ ...s, ...patch }));
+      // Term dates changed → recompute registration reminder alarms.
+      if (patch.terms) await syncRegistrationAlarms();
       return null;
     }
     case 'PANEL_STATE_UPDATE':
