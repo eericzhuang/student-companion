@@ -1267,3 +1267,13 @@ table.pl-table th { color: #475569; font-size: 12px; }
 .pl-gpa-proj { margin-top: 8px; font-size: 13px; }
 .pl-gpa-up { color: #16a34a; font-weight: 700; }
 .pl-gpa-down { color: #dc2626; font-weight: 700; }
+
+/* Prereq chain graph */
+.pl-prereq-graph { margin: 10px 0 16px; }
+.pl-prereq-scroll {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fbfcfe;
+  padding: 4px;
+}

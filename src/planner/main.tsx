@@ -537,6 +537,7 @@ function App() {
           degrees={degrees}
           prereqOverrides={store.prereqOverrides}
           courseEquivalents={store.courseEquivalents}
+          states={states}
         />
       )}
 

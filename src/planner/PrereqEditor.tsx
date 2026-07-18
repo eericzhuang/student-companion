@@ -11,7 +11,8 @@ import { sendToBackground, type PrereqResearchResult } from '../background/messa
 import { getStored } from '../shared/storage';
 import { aiAvailable, isSupreme } from '../shared/plan';
 import { aiLaneFullMessage, aiLaneOpen, enterAiLane, leaveAiLane } from './aiLock';
-import { normalizeCode } from './engine/requirements';
+import { normalizeCode, type CourseStates } from './engine/requirements';
+import { PrereqGraph } from './PrereqGraph';
 
 // Module-level so an in-flight "Auto-find prerequisites" search keeps its state
 // and delivers its result even if the user switches planner tabs mid-request
@@ -28,9 +29,10 @@ interface Props {
   degrees: StoredDegree[];
   prereqOverrides: Record<string, string[]>;
   courseEquivalents: Record<string, string[]>;
+  states: CourseStates;
 }
 
-export function PrereqEditor({ degrees, prereqOverrides, courseEquivalents }: Props) {
+export function PrereqEditor({ degrees, prereqOverrides, courseEquivalents, states }: Props) {
   const code = codeSignal.value;
   const setCode = (v: string) => (codeSignal.value = v);
   const prereqs = prereqsSignal.value;
@@ -143,6 +145,14 @@ export function PrereqEditor({ degrees, prereqOverrides, courseEquivalents }: Pr
   const overrideEntries = Object.entries(prereqOverrides);
   const equivEntries = Object.entries(courseEquivalents);
 
+  // Everything known about prereqs (catalog-parsed + user overrides, which win)
+  const mergedPrereqs = useMemo(() => {
+    const merged: Record<string, string[]> = {};
+    for (const [c, list] of parsedPrereqs) merged[c] = list;
+    for (const [c, list] of Object.entries(prereqOverrides)) merged[normalizeCode(c)] = list.map(normalizeCode);
+    return merged;
+  }, [parsedPrereqs, prereqOverrides]);
+
   return (
     <div class="pl-card">
       <h2>Prerequisites</h2>
@@ -151,6 +161,8 @@ export function PrereqEditor({ degrees, prereqOverrides, courseEquivalents }: Pr
         them here — e.g. course <b>CS 4410</b> requires <b>CS 3410</b>. These override/augment what
         was parsed.
       </p>
+
+      <PrereqGraph prereqs={mergedPrereqs} states={states} />
 
       {aiOn && !supremeOn && (
         <div class="pl-ai-card">
