@@ -36,16 +36,11 @@ interface Props {
   scale?: number;
   /** instructor (raw scraped name) -> RMP avg rating, for inline display */
   ratings?: Map<string, number | null>;
-  /** a friend's schedule drawn dashed behind yours (compare mode) */
-  overlay?: Section[] | null;
 }
 
-export function WeekGrid({ sections, ghost, warnings, onEventClick, scale = 1, ratings, overlay }: Props) {
+export function WeekGrid({ sections, ghost, warnings, onEventClick, scale = 1, ratings }: Props) {
   const pxPerMin = PX_PER_MIN * Math.max(1, scale);
-  const all = useMemo(
-    () => [...sections, ...(ghost ? [ghost] : []), ...(overlay ?? [])],
-    [sections, ghost, overlay],
-  );
+  const all = useMemo(() => [...sections, ...(ghost ? [ghost] : [])], [sections, ghost]);
 
   const showWeekend = useMemo(
     () => all.some((s) => s.meetings.some((m) => m.days & (DAYS.SAT | DAYS.SUN))),
@@ -81,27 +76,6 @@ export function WeekGrid({ sections, ghost, warnings, onEventClick, scale = 1, r
 
   const renderBlocks = (dayMask: DayMask) => {
     const blocks = [];
-    // friend's classes first so the student's own blocks paint on top
-    for (const section of overlay ?? []) {
-      for (const m of section.meetings) {
-        if (!(m.days & dayMask)) continue;
-        blocks.push(
-          <div
-            class="wdc-block wdc-block-friend"
-            style={{
-              top: `${top(m.startMin)}px`,
-              height: `${Math.max((m.endMin - m.startMin) * pxPerMin, 14)}px`,
-            }}
-            title={`Friend: ${section.courseCode} ${formatMinutes(m.startMin)}–${formatMinutes(m.endMin)}`}
-          >
-            <div>👥 {section.courseCode}</div>
-            <div class="wdc-block-time">
-              {formatMinutes(m.startMin)}–{formatMinutes(m.endMin)}
-            </div>
-          </div>,
-        );
-      }
-    }
     for (const section of sections) {
       for (const m of section.meetings) {
         if (!(m.days & dayMask)) continue;

@@ -1132,52 +1132,6 @@
 .wdc-plans-current { background: #f0f6ff; }
 .wdc-plans-actions { text-align: right; }
 
-/* Build tab: candidates, prefs, generated results */
-.wdc-build { padding: 8px 10px; }
-.wdc-build-cands { margin-bottom: 6px; }
-.wdc-build-course { margin-bottom: 6px; font-size: 12px; }
-.wdc-build-pick { color: #64748b; font-size: 11px; margin-left: 6px; }
-.wdc-build-sec {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 2px 0 2px 12px;
-  font-size: 11.5px;
-  color: #334155;
-}
-.wdc-build-add { display: flex; gap: 6px; margin: 6px 0; }
-.wdc-build-add input {
-  border: 1px solid #cbd5e1;
-  border-radius: 7px;
-  padding: 4px 8px;
-  font-size: 11.5px;
-}
-.wdc-build-add input:first-child { width: 90px; }
-.wdc-build-add input:nth-child(2) { flex: 1; }
-.wdc-build-prefs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px 14px;
-  margin: 8px 0;
-  font-size: 11.5px;
-  color: #334155;
-}
-.wdc-build-prefs label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.wdc-build-prefs input[type='range'] { width: 80px; }
-.wdc-build-results { margin-top: 8px; }
-.wdc-build-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 9px;
-  padding: 7px 10px;
-  margin-bottom: 7px;
-  background: #fbfcfe;
-}
-.wdc-build-card-head { display: flex; gap: 8px; align-items: baseline; font-size: 12px; }
-.wdc-build-chosen { color: #334155; font-size: 11.5px; }
-.wdc-build-parts { color: #64748b; font-size: 11px; margin: 3px 0; }
-.wdc-build-actions { display: flex; gap: 12px; }
-
 /* preview banner over the grid */
 .wdc-preview-banner {
   padding: 6px 12px;
@@ -1232,13 +1186,6 @@
 .wdc-friend-result { margin-top: 8px; font-size: 11.5px; color: #334155; line-height: 1.7; }
 .wdc-friend-free { color: #166534; }
 
-/* friend's classes on the grid: dashed, behind the student's own */
-.wdc-block-friend {
-  background: rgba(100, 116, 139, 0.16) !important;
-  border: 1.5px dashed #64748b;
-  color: #334155;
-  z-index: 0;
-}
 
 /* ---- 🌙 Dark mode (class painted on each shadow root by theme.ts) ---- */
 
@@ -1280,7 +1227,6 @@
 .wdc-dark .wdc-rmp-item-body,
 .wdc-dark .wdc-capture-diag { background: #16223a; color: #cbd5e1; }
 .wdc-dark .wdc-itin-stop,
-.wdc-dark .wdc-build-card,
 .wdc-dark .wdc-finals,
 .wdc-dark .wdc-friend,
 .wdc-dark .wdc-plans-current,
@@ -1296,21 +1242,40 @@
 .wdc-dark .wdc-plans-table th { color: #94a3b8; border-color: #334155; }
 .wdc-dark .wdc-plans-table td { border-color: #283548; }
 .wdc-dark .wdc-edit-time,
-.wdc-dark .wdc-build-parts,
-.wdc-dark .wdc-build-pick,
 .wdc-dark .wdc-finals-when,
 .wdc-dark .wdc-finals-loc,
 .wdc-dark .wdc-itin-time { color: #94a3b8; }
-.wdc-dark .wdc-build-sec,
 .wdc-dark .wdc-friend-result,
-.wdc-dark .wdc-build-prefs,
 .wdc-dark .wdc-itin-leg { color: #cbd5e1; }
 .wdc-dark .wdc-preview-banner { background: #3a3417; border-color: #6b5d1a; color: #fde68a; }
 .wdc-dark .wdc-finals-row.clash { background: #3b1a1a; }
-.wdc-dark .wdc-block-friend {
-  background: rgba(148, 163, 184, 0.22) !important;
-  border-color: #94a3b8;
-  color: #e2e8f0;
-}
 .wdc-dark .wdc-capture-toast { background: #103524; border-color: #14532d; color: #86efac; }
 .wdc-dark .wdc-map-located { color: #4ade80; }
+
+/* Friend compare grid: you left-half, friend right-half, green = both free */
+.wdc-cmp { margin-top: 8px; }
+.wdc-cmp-legend { display: flex; gap: 8px; margin-bottom: 6px; font-size: 11px; }
+.wdc-cmp-key { padding: 1px 8px; border-radius: 999px; font-weight: 600; }
+.wdc-cmp-key.wdc-cmp-mine { background: #0f4c81; color: #fff; }
+.wdc-cmp-key.wdc-cmp-friend { background: #b45309; color: #fff; }
+.wdc-cmp-key.wdc-cmp-freekey { background: #bbf7d0; color: #14532d; }
+.wdc-cmp-free {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: rgba(74, 222, 128, 0.28);
+  border-left: 3px solid #22c55e;
+}
+.wdc-cmp-block {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 2px 4px;
+  line-height: 1.15;
+}
+.wdc-cmp-block.wdc-cmp-mine { left: 1px; width: calc(50% - 3px); background: #0f4c81; }
+.wdc-cmp-block.wdc-cmp-friend { right: 1px; width: calc(50% - 3px); background: #b45309; opacity: 0.92; }
+.wdc-dark .wdc-cmp-free { background: rgba(34, 197, 94, 0.2); }

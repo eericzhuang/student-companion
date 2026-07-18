@@ -22,7 +22,7 @@ import { activateLicense, refreshLicense } from './billing';
 import { parseTranscriptText } from '../shared/transcript';
 import { aiCallStatus, isSupreme } from '../shared/plan';
 import { STORAGE_DEFAULTS } from '../shared/types';
-import type { AiFeature, AiHistoryEntry, DegreeProgram, StoredDegree } from '../shared/types';
+import type { AiFeature, AiHistoryEntry, DegreeProgram, ScheduleSnapshot, StoredDegree } from '../shared/types';
 
 const AI_HISTORY_CAP = 50;
 
@@ -96,9 +96,30 @@ function requireSupreme(settings: Parameters<typeof isSupreme>[0], feature: stri
   throw new Error(`${feature} is a Supreme feature (it runs deep web research). Upgrade to Supreme to use it.`);
 }
 
+/**
+ * Every distinct Workday saved schedule the student opens becomes (or
+ * refreshes) its own plan in the calendar's Plans tab, named by the page
+ * title — open "Schedule 1" then "Schedule 2" and both are ready to compare.
+ */
+async function upsertCapturedPlan(snapshot: ScheduleSnapshot): Promise<void> {
+  const name = snapshot.termLabel?.trim();
+  if (!name || snapshot.sections.length === 0) return;
+  await updateStored('scenarios', (cur) => {
+    const existing = cur.find((s) => s.name === name);
+    // unchanged content → no storage churn on every page visit
+    if (existing && JSON.stringify(existing.snapshot.sections) === JSON.stringify(snapshot.sections)) {
+      return cur;
+    }
+    const scenario = { id: existing?.id ?? crypto.randomUUID(), name, snapshot, createdAt: Date.now() };
+    return [...cur.filter((s) => s.name !== name), scenario].slice(-20);
+  });
+}
+
 async function handle(req: ExtRequest, trusted: boolean): Promise<unknown> {
   switch (req.kind) {
     case 'SCHEDULE_CAPTURED': {
+      // A named capture is a saved schedule — track it as a plan either way.
+      await upsertCapturedPlan(req.snapshot);
       // Interception beats DOM; a fresh DOM capture may replace a stale intercept
       const current = (await getAllStored()).schedule;
       if (
@@ -273,17 +294,6 @@ async function handle(req: ExtRequest, trusted: boolean): Promise<unknown> {
       await setStored('schedule', { ...hit.snapshot, capturedAt: Date.now() });
       return null;
     }
-    case 'CANDIDATE_ADD':
-      await updateStored('builderCandidates', (cur) =>
-        [...cur.filter((s) => s.sectionId !== req.section.sectionId), req.section].slice(-60),
-      );
-      return null;
-    case 'CANDIDATE_REMOVE':
-      await updateStored('builderCandidates', (cur) => cur.filter((s) => s.sectionId !== req.sectionId));
-      return null;
-    case 'CANDIDATE_CLEAR':
-      await setStored('builderCandidates', []);
-      return null;
     case 'BACKUP_IMPORT': {
       const data = req.data;
       if (typeof data !== 'object' || data === null || typeof data.schemaVersion !== 'number') {

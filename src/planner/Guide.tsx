@@ -81,14 +81,14 @@ const STEPS: Step[] = [
     body: 'A floating schedule calendar with conflict + walk-time warnings (click any class for its professor, rating, and room; the Route view maps your day), a capture widget that saves your courses into this planner, and RateMyProfessors ratings next to instructor names. Toggle everything in ⚙ Options.',
   },
   {
-    icon: '🧩',
-    title: 'Build the perfect schedule',
-    body: 'On Find Course Sections, tap ☆ candidate on every section you\'re considering. The calendar\'s Build tab then generates every conflict-free combination, ranked by your preferences — mornings, gaps, ratings, walking. Preview one, save it as a plan, or make it your schedule.',
+    icon: '🗂',
+    title: 'Saved schedules become Plans',
+    body: 'Make several saved schedules in Workday ("Schedule 1", "Schedule 2", …) and open each once — every one is captured automatically as its own plan. The calendar\'s Plans tab then compares them side by side: credits, professor ratings, earliest class, walking.',
   },
   {
-    icon: '🗂',
-    title: 'Plans, friends & finals',
-    body: 'The Plans tab compares saved schedules side by side and can overlay a friend\'s schedule (file exchange, nothing uploaded) to find mutual free time. Track final exams with clash warnings in Edit, and export the calendar as a 📷 image or 📆 .ics file.',
+    icon: '👥',
+    title: 'Friends & finals',
+    body: 'In Plans, load a friend\'s share file (nothing uploaded) to see both schedules on one grid — green means you\'re both free. Track final exams with clash warnings in Edit, and export the calendar as a 📷 image or 📆 .ics file.',
   },
   {
     icon: '⚙',

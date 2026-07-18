@@ -38,19 +38,6 @@ export const mockBuildingCoords: Record<string, { lat: number; lng: number }> = 
   Goldwin: { lat: 42.447, lng: -76.4855 },
 };
 
-/**
- * Builder candidates: two courses with several section options each. One
- * MATH 2940 section clashes with CS 2110, one CS 3110 section clashes with
- * PHYS 1112 — so the builder visibly prunes combinations.
- */
-export const mockCandidates: Section[] = [
-  sec('MATH 2940-001', 'MATH 2940', 'Linear Algebra', 4, 'Ravi Ramakrishna', 'MWF | 10:00 AM - 10:50 AM | Malott 253'),
-  sec('MATH 2940-002', 'MATH 2940', 'Linear Algebra', 4, 'Irena Peeva', 'TTh | 8:40 AM - 9:55 AM | Malott 253'),
-  sec('MATH 2940-003', 'MATH 2940', 'Linear Algebra', 4, 'Ravi Ramakrishna', 'MWF | 12:20 PM - 1:10 PM | Rockefeller 122'),
-  sec('CS 3110-001', 'CS 3110', 'Functional Programming', 4, 'Michael Clarkson', 'MW | 2:00 PM - 3:15 PM | Statler Aud'),
-  sec('CS 3110-002', 'CS 3110', 'Functional Programming', 4, 'Michael Clarkson', 'TTh | 2:55 PM - 4:10 PM | Statler Aud'),
-];
-
 /** A search result the student is considering — conflicts with CS 2110. */
 export const mockGhostConflict: Section = sec(
   'CS 3410-002',
@@ -185,7 +172,6 @@ export const mockHistory = {
 export const mockStore = {
   ...STORAGE_DEFAULTS,
   schedule: { termLabel: 'Spring 2026', sections: mockSchedule, capturedAt: Date.now(), source: 'intercept' as const },
-  builderCandidates: mockCandidates,
   academicHistory: mockHistory,
   degrees: Object.fromEntries(mockDegrees.map((d) => [d.id, d])),
   settings: {

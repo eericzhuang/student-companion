@@ -12,7 +12,6 @@ import type {
   RmpCacheEntry,
   RmpSchool,
   ScheduleSnapshot,
-  Section,
   Settings,
   StoredDegree,
   HistoryCourse,
@@ -55,10 +54,6 @@ export type ExtRequest =
   | { kind: 'SCENARIO_SAVE'; name: string; snapshot: ScheduleSnapshot }
   | { kind: 'SCENARIO_DELETE'; id: string }
   | { kind: 'SCENARIO_LOAD'; id: string }
-  // --- schedule-builder candidates (⭐ on result rows / Build tab) ---
-  | { kind: 'CANDIDATE_ADD'; section: Section }
-  | { kind: 'CANDIDATE_REMOVE'; sectionId: string }
-  | { kind: 'CANDIDATE_CLEAR' }
   // --- full-data backup restore (from Options) ---
   | { kind: 'BACKUP_IMPORT'; data: Record<string, unknown> }
   | { kind: 'AI_TEST' }

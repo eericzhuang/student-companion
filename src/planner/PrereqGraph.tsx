@@ -34,7 +34,14 @@ export function PrereqGraph({
   states: CourseStates;
 }) {
   const graph = useMemo(() => layoutPrereqGraph(prereqs, states), [prereqs, states]);
-  if (graph.edges.length === 0) return null;
+  if (graph.edges.length === 0) {
+    return (
+      <p class="pl-muted">
+        🕸 Once prerequisites are known (parsed from an imported degree, or added below), a chain
+        graph appears here showing what unlocks what.
+      </p>
+    );
+  }
 
   const pos = new Map(graph.nodes.map((n) => [n.code, n]));
   const x = (layer: number) => PAD + layer * COL_W;

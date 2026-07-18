@@ -116,20 +116,6 @@ const chromeStub = {
           write('schedule', { ...hit.snapshot, capturedAt: Date.now() });
           return { ok: true };
         }
-        case 'CANDIDATE_ADD': {
-          const cur = (store.builderCandidates as Array<{ sectionId: string }>) ?? [];
-          const section = req.section as { sectionId: string };
-          write('builderCandidates', [...cur.filter((s) => s.sectionId !== section.sectionId), section].slice(-60));
-          return { ok: true };
-        }
-        case 'CANDIDATE_REMOVE': {
-          const cur = (store.builderCandidates as Array<{ sectionId: string }>) ?? [];
-          write('builderCandidates', cur.filter((s) => s.sectionId !== req.sectionId));
-          return { ok: true };
-        }
-        case 'CANDIDATE_CLEAR':
-          write('builderCandidates', []);
-          return { ok: true };
         case 'BACKUP_IMPORT': {
           const data = req.data as Record<string, unknown>;
           if (typeof data?.schemaVersion !== 'number') return { ok: false, error: 'Not a backup file.' };
@@ -142,6 +128,23 @@ const chromeStub = {
         case 'SCHEDULE_SET':
           write('schedule', req.snapshot);
           return { ok: true };
+        case 'SCHEDULE_CAPTURED': {
+          // mirror the background: a named capture upserts a plan by label
+          const snap = req.snapshot as { termLabel: string | null; sections: unknown[] };
+          const name = snap.termLabel?.trim();
+          if (name && snap.sections.length > 0) {
+            const cur = (store.scenarios as Array<{ id: string; name: string; snapshot: { sections: unknown[] } }>) ?? [];
+            const existing = cur.find((s) => s.name === name);
+            if (!existing || JSON.stringify(existing.snapshot.sections) !== JSON.stringify(snap.sections)) {
+              write('scenarios', [
+                ...cur.filter((s) => s.name !== name),
+                { id: existing?.id ?? crypto.randomUUID(), name, snapshot: snap, createdAt: Date.now() },
+              ].slice(-20));
+            }
+          }
+          write('schedule', req.snapshot);
+          return { ok: true };
+        }
         case 'HISTORY_SET':
           write('academicHistory', req.history);
           return { ok: true };

@@ -26,16 +26,12 @@ All notable user-facing changes to the extension.
   and remembered (editable in Options → Future terms).
 - Ratings are color-coded everywhere (green ≥3.8, amber ≥2.8, red below),
   and the calendar's Edit view can fix a section's professor and location.
-- **🧩 Schedule builder**: mark sections you're considering with ☆ on Find
-  Course Sections (several per course), then let the Build tab generate every
-  conflict-free combination and rank them by your preferences — avoid early
-  mornings, compact days, professor ratings, less walking. Preview any result
-  on the calendar, save it as a plan, or make it your schedule. All local
-  math, no AI.
-- **🗂 Plans (schedule scenarios)**: save the current schedule as "Plan A",
-  "Plan B", …, compare plans side by side (credits, average professor rating,
-  earliest class, weekly walking, risky legs) and load one back with a click —
-  unsaved work is auto-stashed first, so nothing is ever lost.
+- **🗂 Plans (schedule scenarios)**: every saved schedule you open in Workday
+  is captured automatically as its own plan — build "Schedule 1" and
+  "Schedule 2" in Workday, view each once, then compare them side by side
+  (credits, average professor rating, earliest class, weekly walking, risky
+  legs) and load one back with a click. Manual "save current as…" works too,
+  and unsaved work is auto-stashed before a load, so nothing is ever lost.
 - **💾 Data backup** in Options: export everything (degrees, history,
   schedule, plans, settings) as one JSON file and restore it later — the file
   never leaves your computer.
@@ -43,8 +39,9 @@ All notable user-facing changes to the extension.
   overlaps are flagged, a chronological finals strip shows under the calendar,
   and finals export to your calendar app with everything else.
 - **👥 Compare with a friend**: exchange tiny schedule files (course codes and
-  times only — nothing else, and never uploaded) to see shared classes, mutual
-  free time, and their week dashed over yours.
+  times only — nothing else, and never uploaded) and see both weeks on one
+  grid — your classes on the left half of each day, theirs on the right, with
+  green bands wherever you're both free.
 - **🕸 Prerequisite chain graph**: the Prereqs tab draws your courses as an
   unlock graph, colored by status — bottleneck courses stand out at a glance.
 - **⏰ Registration reminders**: set when your window opens (per term, in
