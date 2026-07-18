@@ -37,6 +37,10 @@ All notable user-facing changes to the extension.
   recommendations.
 - **Academic history** from Workday capture or transcript upload (PDF/text),
   fully editable.
+- **🎓 GPA card** on the Progress tab: cumulative GPA computed from your
+  history (standard 4.0 scale), plus **what-if grades** — pick hypothetical
+  grades for current/planned courses and watch the projected term and
+  cumulative GPA update live.
 - **🔮 What-if course tryout**: test courses you're considering against every
   degree's requirements — see before→after progress, per-course impact, and
   commit winners to the semester plan with one click (pick the target term when

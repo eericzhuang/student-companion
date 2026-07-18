@@ -24,6 +24,7 @@ import {
 } from './engine/requirements';
 import { computeLevel, effectiveThemeLevel } from './engine/levels';
 import { LevelChip, LevelHero } from './LevelHero';
+import { GpaCard } from './GpaCard';
 import { Guide } from './Guide';
 import { DegreeImport } from './DegreeImport';
 import { ReviewEditor } from './ReviewEditor';
@@ -204,7 +205,29 @@ function App() {
     const evaluations = degrees.map((d) =>
       evaluateDegree(d, states, store.courseEquivalents, scopeReqOverrides(store.reqOverrides, d.id)),
     );
-    return { degrees, states, evaluations };
+    // What-if GPA candidates: in-progress history courses, scheduled courses,
+    // and board-planned courses (credits from the schedule/catalog, else 3).
+    const historyCourses = store.academicHistory?.courses ?? [];
+    const catalogCredits = new Map<string, number>();
+    for (const d of degrees)
+      for (const g of d.groups)
+        for (const c of g.courses) if (c.credits) catalogCredits.set(c.code, c.credits);
+    const seen = new Set<string>();
+    const gpaCandidates: Array<{ code: string; credits: number }> = [];
+    const addCandidate = (code: string, credits: number | null | undefined) => {
+      if (seen.has(code)) return;
+      seen.add(code);
+      gpaCandidates.push({ code, credits: credits || catalogCredits.get(code) || 3 });
+    };
+    const graded = new Set(
+      historyCourses.filter((c) => c.status === 'completed' && c.grade).map((c) => c.code),
+    );
+    for (const c of historyCourses) if (c.status === 'in-progress') addCandidate(c.code, c.credits);
+    for (const s of store.schedule?.sections ?? [])
+      if (!graded.has(s.courseCode)) addCandidate(s.courseCode, s.credits);
+    for (const code of Object.keys(store.plannerState.assignments))
+      if (!graded.has(code)) addCandidate(code, null);
+    return { degrees, states, evaluations, gpaCandidates };
   }, [store]);
 
   if (!store || !derived) return <div class="pl-shell">Loading…</div>;
@@ -393,6 +416,7 @@ function App() {
               }
             />
           )}
+          <GpaCard history={store.academicHistory?.courses ?? []} candidates={derived.gpaCandidates} />
           <div class="pl-legend">
             <span>✅ satisfied</span>
             <span>🕐 partially done</span>

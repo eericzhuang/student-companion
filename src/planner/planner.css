@@ -1246,3 +1246,16 @@ table.pl-table th { color: #475569; font-size: 12px; }
 /* clickable header badges: plan badge → subscribe page, level chip → Progress */
 .pl-badge-click { cursor: pointer; }
 .pl-badge-click:hover { filter: brightness(1.06); box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18); }
+
+/* GPA card (Progress tab) */
+.pl-gpa-head { display: flex; align-items: center; gap: 12px; }
+.pl-gpa-big { font-size: 34px; font-weight: 800; color: var(--lv-color, #0f4c81); }
+.pl-gpa-label { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.pl-gpa-note { margin: 6px 0 0; font-size: 11.5px; }
+.pl-gpa-whatif { margin-top: 10px; border-top: 1px solid #e2e8f0; padding-top: 8px; }
+.pl-gpa-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+.pl-gpa-code { flex: 1; font-weight: 600; font-size: 12.5px; }
+.pl-gpa-row input { width: 58px; }
+.pl-gpa-proj { margin-top: 8px; font-size: 13px; }
+.pl-gpa-up { color: #16a34a; font-weight: 700; }
+.pl-gpa-down { color: #dc2626; font-weight: 700; }
