@@ -34,32 +34,29 @@ export function GpaCard({ history, candidates }: { history: HistoryCourse[]; can
       ? projection.projected - current.gpa
       : null;
 
-  if (history.length === 0) return null;
+  if (history.length === 0 || current.gpa === null) return null;
 
   return (
-    <div class="pl-card pl-gpa">
-      <div class="pl-gpa-head">
-        <span class="pl-gpa-big" title={`${current.qualityPoints.toFixed(1)} quality points / ${current.gpaCredits} credits`}>
-          {fmt(current.gpa)}
+    <div class="pl-gpa-strip">
+      <div class="pl-gpa-row-head">
+        <span title={`${current.qualityPoints.toFixed(1)} quality points / ${current.gpaCredits} credits · ${current.counted} letter-graded courses · standard 4.0 scale (your school may differ)`}>
+          🎓 GPA <b class="pl-gpa-num">{fmt(current.gpa)}</b>
+          <span class="pl-muted"> · {current.gpaCredits} cr</span>
         </span>
-        <span class="pl-gpa-label">
-          <b>GPA</b>
-          <span class="pl-muted">
-            {current.counted} course{current.counted === 1 ? '' : 's'} · {current.gpaCredits} credits
+        {current.missingCredits.length > 0 && (
+          <span
+            class="pl-muted"
+            title={`Skipped (unknown credits): ${current.missingCredits.map((c) => c.code).join(', ')} — fill credits in the History tab to count them.`}
+          >
+            ⚠ {current.missingCredits.length} skipped
           </span>
-        </span>
+        )}
         {candidates.length > 0 && (
-          <button class="pl-btn" onClick={() => setOpen(!open)}>
-            {open ? 'Hide what-if' : '🔮 What-if grades'}
+          <button class="pl-link-inline" onClick={() => setOpen(!open)}>
+            {open ? 'hide what-if' : '🔮 what-if grades'}
           </button>
         )}
       </div>
-      {current.missingCredits.length > 0 && (
-        <p class="pl-muted pl-gpa-note">
-          ⚠ Skipped (unknown credits): {current.missingCredits.map((c) => c.code).join(', ')} — fill
-          credits in the History tab to count them.
-        </p>
-      )}
       {open && (
         <div class="pl-gpa-whatif">
           <p class="pl-muted">Pick grades for current / planned courses to project your GPA:</p>
@@ -102,7 +99,6 @@ export function GpaCard({ history, candidates }: { history: HistoryCourse[]; can
           )}
         </div>
       )}
-      <p class="pl-muted pl-gpa-note">Standard 4.0 scale — your school's scale may differ.</p>
     </div>
   );
 }

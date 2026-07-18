@@ -48,9 +48,9 @@ function App() {
       <TermSection settings={settings} patch={patch} />
       <CampusMapSection settings={settings} patch={patch} />
       <AdvancedSelectors settings={settings} patch={patch} />
-      <BackupSection />
       <FeedbackSection settings={settings} />
       <AdminSection settings={settings} patch={patch} />
+      <BackupSection />
       <p class="pl-muted" style={{ textAlign: 'center', marginTop: '18px' }}>
         Something broken, or a school layout we don't recognize?{' '}
         <a href="mailto:eric2007118@gmail.com?subject=Student%20Companion%20support">
@@ -825,40 +825,39 @@ function BackupSection() {
       .catch((err) => setNote(err instanceof Error ? err.message : String(err)));
   };
 
+  // Deliberately tiny: one line at the bottom of Options, out of the way
+  // until the day it saves you.
   return (
-    <div class="pl-card">
-      <h2>💾 Data backup</h2>
-      <p class="pl-muted">
-        Download everything (degrees, history, schedule, plans, settings) as one file, or restore
-        from a previous backup. The file stays on your computer.
-      </p>
-      <div class="pl-row">
-        <button class="pl-btn" onClick={() => void exportAll()}>
-          ⬇ Export backup
-        </button>
-        <label class="pl-btn" style={{ cursor: 'pointer' }}>
-          ⬆ Import backup…
-          <input type="file" accept="application/json,.json" style={{ display: 'none' }} onChange={pickFile} />
-        </label>
-      </div>
+    <p class="pl-muted" style={{ textAlign: 'center', marginTop: '14px' }}>
+      💾 All your data:{' '}
+      <button class="pl-link-inline" onClick={() => void exportAll()}>
+        export backup
+      </button>{' '}
+      ·{' '}
+      <label class="pl-link-inline" style={{ cursor: 'pointer' }}>
+        import backup
+        <input type="file" accept="application/json,.json" style={{ display: 'none' }} onChange={pickFile} />
+      </label>
       {pending && (
-        <div class="pl-card" style={{ marginTop: '8px', background: '#fef9c3' }}>
-          <p>
-            Restore <b>{pending.summary}</b>? This <b>replaces</b> the data currently in the
-            extension.
-          </p>
-          <div class="pl-row">
-            <button class="pl-btn danger" onClick={restore}>
-              Yes, replace my data
-            </button>
-            <button class="pl-btn" onClick={() => setPending(null)}>
-              Cancel
-            </button>
-          </div>
-        </div>
+        <span>
+          <br />
+          Restore <b>{pending.summary}</b>? This <b>replaces</b> current data.{' '}
+          <button class="pl-link-inline" onClick={restore}>
+            yes, replace
+          </button>{' '}
+          ·{' '}
+          <button class="pl-link-inline" onClick={() => setPending(null)}>
+            cancel
+          </button>
+        </span>
       )}
-      {note && <p class="pl-muted">{note}</p>}
-    </div>
+      {note && (
+        <span>
+          <br />
+          {note}
+        </span>
+      )}
+    </p>
   );
 }
 
