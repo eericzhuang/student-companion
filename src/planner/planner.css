@@ -1250,16 +1250,16 @@ table.pl-table th { color: #475569; font-size: 12px; }
 /* GPA strip (Progress tab) — deliberately slim */
 .pl-gpa-strip {
   margin: 6px 0 10px;
-  padding: 6px 12px;
+  padding: 8px 14px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 9px;
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: #334155;
 }
 .pl-gpa-row-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.pl-gpa-row-head > span:first-child { flex: 1; }
-.pl-gpa-num { font-size: 15px; color: var(--lv-color, #0f4c81); }
+.pl-gpa-row-head > span:first-child { flex: 1; display: flex; align-items: baseline; gap: 6px; }
+.pl-gpa-num { font-size: 24px; font-weight: 800; line-height: 1.1; color: var(--lv-color, #0f4c81); }
 .pl-gpa-whatif { margin-top: 10px; border-top: 1px solid #e2e8f0; padding: 12px 2px 8px; font-size: 14px; }
 .pl-gpa-whatif > .pl-muted { font-size: 13px; margin: 0 0 8px; }
 .pl-gpa-row { display: flex; align-items: center; gap: 10px; margin: 7px 0; }
