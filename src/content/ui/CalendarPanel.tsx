@@ -10,6 +10,7 @@
 import { signal } from '@preact/signals';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type {
+  BuilderPrefs,
   CampusMap,
   DayMask,
   Meeting,
@@ -23,7 +24,8 @@ import type {
 import { scenarioMetrics } from '../../shared/scenario';
 import { getStored, onStoredChange } from '../../shared/storage';
 import { sendToBackground, type MapLookupResult, type RmpLookupResult } from '../../background/messages';
-import { computeFreeSlots, dayMaskToLabels, formatMinutes } from '../../shared/time';
+import { computeFreeSlots, dayMaskToLabels, formatMinutes, parseMeetingPatterns } from '../../shared/time';
+import { DEFAULT_PREFS, generateSchedules, type BuildResult } from '../../shared/builder';
 import {
   buildingOf,
   DAY_LABELS,
@@ -44,7 +46,7 @@ import { isPro } from '../../shared/plan';
 /** Search-result section currently hovered (set by decorateRows). */
 export const ghostSection = signal<Section | null>(null);
 
-type CalView = 'grid' | 'free' | 'map' | 'plans' | 'edit';
+type CalView = 'grid' | 'free' | 'map' | 'build' | 'plans' | 'edit';
 
 export function CalendarPanel() {
   const [schedule, setSchedule] = useState<ScheduleSnapshot | null>(null);
@@ -61,6 +63,8 @@ export function CalendarPanel() {
   const [ratings, setRatings] = useState<Map<string, number | null>>(new Map());
   const [terms, setTerms] = useState<TermConfig[]>([]);
   const [icsForm, setIcsForm] = useState<{ start: string; end: string } | null>(null);
+  // Build-tab result being previewed in the grid instead of the real schedule
+  const [preview, setPreview] = useState<{ label: string; sections: Section[] } | null>(null);
 
   const defaultPos = { x: Math.max(8, window.innerWidth - 456), y: 80 };
   const { pos, setPos, startDrag, wasDragged } = useDraggable(defaultPos, (p) =>
@@ -288,6 +292,9 @@ export function CalendarPanel() {
           <button class={view === 'map' ? 'active' : ''} onClick={() => setView('map')}>
             🗺 Route
           </button>
+          <button class={view === 'build' ? 'active' : ''} onClick={() => setView('build')}>
+            🧩 Build
+          </button>
           <button class={view === 'plans' ? 'active' : ''} onClick={() => setView('plans')}>
             Plans
           </button>
@@ -299,7 +306,15 @@ export function CalendarPanel() {
       {selEvent && view === 'grid' && (
         <EventDetails section={selEvent.section} meeting={selEvent.meeting} onClose={() => setSelEvent(null)} />
       )}
-      {sections.length === 0 && view !== 'edit' && view !== 'plans' ? (
+      {preview && view === 'grid' && (
+        <div class="wdc-preview-banner">
+          👁 Previewing <b>{preview.label}</b> — your real schedule is untouched.{' '}
+          <button class="wdc-link-btn" onClick={() => setPreview(null)}>
+            close preview
+          </button>
+        </div>
+      )}
+      {sections.length === 0 && view !== 'edit' && view !== 'plans' && view !== 'build' && !preview ? (
         <div class="wdc-empty">
           No saved schedule captured yet.
           <br />
@@ -307,9 +322,9 @@ export function CalendarPanel() {
         </div>
       ) : view === 'grid' ? (
         <WeekGrid
-          sections={sections}
-          ghost={ghostSection.value}
-          warnings={gridWarnings}
+          sections={preview ? preview.sections : sections}
+          ghost={preview ? null : ghostSection.value}
+          warnings={preview ? undefined : gridWarnings}
           scale={gridScale}
           ratings={ratings}
           onEventClick={(section, meeting) => setSelEvent({ section, meeting })}
@@ -318,6 +333,17 @@ export function CalendarPanel() {
         <FreeTimeList sections={sections} />
       ) : view === 'map' ? (
         <RouteMap sections={sections} campusMap={campusMap} transitions={transitions} />
+      ) : view === 'build' ? (
+        <BuilderView
+          schedule={schedule}
+          ratings={ratings}
+          campusMap={campusMap}
+          walkSpeed={walkSpeed}
+          onPreview={(label, secs) => {
+            setPreview({ label, sections: secs });
+            setView('grid');
+          }}
+        />
       ) : view === 'plans' ? (
         <ScenarioList
           schedule={schedule}
@@ -936,6 +962,303 @@ function ScenarioList({
         Ratings/walk columns use the same data as the calendar — locate buildings in 🗺 Route for
         walk numbers. Loading a plan replaces the calendar; unsaved work is stashed automatically.
       </div>
+    </div>
+  );
+}
+
+/**
+ * Build tab: generate conflict-free schedules from ⭐ candidate sections
+ * (one per course, on top of the current schedule), ranked by preference
+ * weights — mornings, compactness, professor ratings, walking. All local
+ * math, no AI.
+ */
+function BuilderView({
+  schedule,
+  ratings,
+  campusMap,
+  walkSpeed,
+  onPreview,
+}: {
+  schedule: ScheduleSnapshot | null;
+  ratings: Map<string, number | null>;
+  campusMap: CampusMap | null;
+  walkSpeed: number;
+  onPreview: (label: string, sections: Section[]) => void;
+}) {
+  const [candidates, setCandidates] = useState<Section[]>([]);
+  const [prefs, setPrefs] = useState<BuilderPrefs>(DEFAULT_PREFS);
+  const [result, setResult] = useState<BuildResult | null>(null);
+  const [extraRatings, setExtraRatings] = useState<Map<string, number | null>>(new Map());
+  const [addCode, setAddCode] = useState('');
+  const [addTime, setAddTime] = useState('');
+  const [addErr, setAddErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    void getStored('builderCandidates').then(setCandidates);
+    void getStored('settings').then((s) => s.builderPrefs && setPrefs({ ...DEFAULT_PREFS, ...s.builderPrefs }));
+    return onStoredChange('builderCandidates', setCandidates);
+  }, []);
+
+  // Ratings for candidate professors the current schedule doesn't cover.
+  useEffect(() => {
+    const names = [
+      ...new Set(candidates.map((c) => c.instructor).filter((n): n is string => !!n && !ratings.has(n))),
+    ];
+    if (names.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      const next = new Map<string, number | null>();
+      for (const n of names) {
+        try {
+          const res = await sendToBackground<RmpLookupResult>({ kind: 'RMP_LOOKUP', instructorName: n });
+          next.set(n, res.entry?.teacher?.avgRating ?? null);
+        } catch {
+          next.set(n, null);
+        }
+      }
+      if (!cancelled) setExtraRatings(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [candidates.map((c) => c.instructor).join('|')]);
+
+  const allRatings = useMemo(() => {
+    const merged = new Map(ratings);
+    for (const [k, v] of extraRatings) if (!merged.has(k)) merged.set(k, v);
+    return merged;
+  }, [ratings, extraRatings]);
+
+  const groups = useMemo(() => {
+    const m = new Map<string, Section[]>();
+    for (const c of candidates) {
+      const g = m.get(c.courseCode);
+      if (g) g.push(c);
+      else m.set(c.courseCode, [c]);
+    }
+    return [...m.entries()];
+  }, [candidates]);
+
+  const setPref = (key: keyof BuilderPrefs, value: number) => {
+    const next = { ...prefs, [key]: value };
+    setPrefs(next);
+    void sendToBackground({ kind: 'SETTINGS_UPDATE', patch: { builderPrefs: next } }).catch(() => {});
+  };
+
+  const generate = () => {
+    setResult(
+      generateSchedules(schedule?.sections ?? [], candidates, prefs, {
+        ratings: allRatings,
+        buildings: campusMap?.buildings ?? {},
+        walkSpeedKmh: walkSpeed,
+      }),
+    );
+  };
+
+  const addManual = () => {
+    const code = addCode.trim().replace(/\s+/g, ' ');
+    if (!code) {
+      setAddErr('Enter a course code.');
+      return;
+    }
+    const meetings = parseMeetingPatterns(addTime);
+    if (meetings.length === 0) {
+      setAddErr('Couldn\'t read the time. Try like "TTh 1:00 PM - 2:15 PM".');
+      return;
+    }
+    setAddErr(null);
+    void sendToBackground({
+      kind: 'CANDIDATE_ADD',
+      section: {
+        sectionId: `cand:${code}:${Date.now()}`,
+        courseCode: code,
+        title: code,
+        credits: null,
+        instructor: null,
+        meetings,
+      },
+    }).catch(() => {});
+    setAddCode('');
+    setAddTime('');
+  };
+
+  const meetingSummary = (s: Section) =>
+    s.meetings
+      .map((m) => `${dayMaskToLabels(m.days).join(' ')} ${formatMinutes(m.startMin)}`)
+      .join(', ');
+
+  const saveScenario = (label: string, secs: Section[]) => {
+    void sendToBackground({
+      kind: 'SCENARIO_SAVE',
+      name: label,
+      snapshot: {
+        termLabel: schedule?.termLabel ?? null,
+        sections: secs,
+        capturedAt: Date.now(),
+        source: 'dom',
+      },
+    }).catch(() => {});
+  };
+
+  const useAsSchedule = (secs: Section[]) => {
+    void sendToBackground({
+      kind: 'SCHEDULE_SET',
+      snapshot: {
+        termLabel: schedule?.termLabel ?? null,
+        sections: secs,
+        capturedAt: Date.now(),
+        source: 'dom',
+      },
+    }).catch(() => {});
+  };
+
+  const PREF_ROWS: Array<{ key: keyof BuilderPrefs; label: string }> = [
+    { key: 'morning', label: '🌅 Avoid early mornings' },
+    { key: 'compact', label: '⏳ Compact days' },
+    { key: 'ratings', label: '★ Professor ratings' },
+    { key: 'walking', label: '🚶 Less walking' },
+  ];
+
+  return (
+    <div class="wdc-build">
+      {groups.length === 0 ? (
+        <div class="wdc-empty">
+          No candidate sections yet. On <b>Find Course Sections</b>, click <b>☆ candidate</b> on
+          each section you're considering (several per course is the point) — or add one below.
+        </div>
+      ) : (
+        <div class="wdc-build-cands">
+          {groups.map(([code, secs]) => (
+            <div class="wdc-build-course">
+              <b>{code}</b> <span class="wdc-build-pick">pick 1 of {secs.length}</span>
+              {secs.map((s) => (
+                <div class="wdc-build-sec">
+                  <span>
+                    {meetingSummary(s)}
+                    {s.instructor && (
+                      <>
+                        {' '}
+                        · {displayInstructorName(s.instructor)}
+                        {allRatings.get(s.instructor) != null && (
+                          <b class={`wdc-rate-${ratingClass(allRatings.get(s.instructor))}`}>
+                            {' '}★{allRatings.get(s.instructor)!.toFixed(1)}
+                          </b>
+                        )}
+                      </>
+                    )}
+                  </span>
+                  <button
+                    class="wdc-edit-del"
+                    title="Remove candidate"
+                    onClick={() => void sendToBackground({ kind: 'CANDIDATE_REMOVE', sectionId: s.sectionId }).catch(() => {})}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div class="wdc-build-add">
+        <input
+          placeholder="Course code"
+          value={addCode}
+          onInput={(e) => setAddCode((e.target as HTMLInputElement).value)}
+        />
+        <input
+          placeholder="Time, e.g. TTh 1:00 PM - 2:15 PM"
+          value={addTime}
+          onInput={(e) => setAddTime((e.target as HTMLInputElement).value)}
+          onKeyDown={(e) => e.key === 'Enter' && addManual()}
+        />
+        <button class="wdc-capture-btn wdc-map-btn" onClick={addManual}>
+          ＋ candidate
+        </button>
+      </div>
+      {addErr && <div class="wdc-edit-error">{addErr}</div>}
+
+      <div class="wdc-build-prefs">
+        {PREF_ROWS.map((p) => (
+          <label>
+            <span>{p.label}</span>
+            <input
+              type="range"
+              min={0}
+              max={2}
+              step={0.5}
+              value={(prefs[p.key] as number | undefined) ?? 1}
+              onChange={(e) => setPref(p.key, Number((e.target as HTMLInputElement).value))}
+            />
+          </label>
+        ))}
+        <label>
+          <span>🌅 OK from</span>
+          <select
+            value={prefs.earliestOk ?? 540}
+            onChange={(e) => setPref('earliestOk', Number((e.target as HTMLSelectElement).value))}
+          >
+            <option value={480}>8 AM</option>
+            <option value={540}>9 AM</option>
+            <option value={600}>10 AM</option>
+            <option value={660}>11 AM</option>
+          </select>
+        </label>
+      </div>
+
+      <button class="wdc-capture-btn" disabled={groups.length === 0} onClick={generate}>
+        🧩 Generate schedules
+      </button>
+
+      {result && (
+        <div class="wdc-build-results">
+          {result.skippedLocked.length > 0 && (
+            <div class="wdc-map-note">
+              Already on your schedule (skipped): {result.skippedLocked.join(', ')}
+            </div>
+          )}
+          {result.results.length === 0 ? (
+            <div class="wdc-empty">
+              No conflict-free combination found — every mix of these sections clashes (or clashes
+              with your current schedule). Try adding more section options per course.
+            </div>
+          ) : (
+            result.results.map((r, i) => (
+              <div class="wdc-build-card">
+                <div class="wdc-build-card-head">
+                  <b>#{i + 1}</b>
+                  <span class="wdc-build-chosen">
+                    {r.chosen.map((s) => `${s.courseCode} (${meetingSummary(s)})`).join(' · ')}
+                  </span>
+                </div>
+                <div class="wdc-build-parts">
+                  {r.parts.earlyMin > 0 ? `🌅 ${r.parts.earlyMin} early min` : '🌅 none'} · ⏳{' '}
+                  {r.parts.gapMin} gap min
+                  {r.parts.avgRating != null && <> · ★{r.parts.avgRating.toFixed(1)} avg</>}
+                  {r.parts.walkMin != null && <> · 🚶 ~{Math.round(r.parts.walkMin)} min/wk</>}
+                </div>
+                <div class="wdc-build-actions">
+                  <button class="wdc-link-btn" onClick={() => onPreview(`build #${i + 1}`, r.sections)}>
+                    👁 preview
+                  </button>
+                  <button class="wdc-link-btn" onClick={() => saveScenario(`Build #${i + 1}`, r.sections)}>
+                    💾 save as plan
+                  </button>
+                  <button class="wdc-link-btn" onClick={() => useAsSchedule(r.sections)}>
+                    ✅ use as schedule
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+          {result.truncated && (
+            <div class="wdc-map-note">
+              Too many combinations to try them all — showing the best of the first 5,000.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

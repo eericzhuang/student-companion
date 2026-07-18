@@ -116,6 +116,20 @@ const chromeStub = {
           write('schedule', { ...hit.snapshot, capturedAt: Date.now() });
           return { ok: true };
         }
+        case 'CANDIDATE_ADD': {
+          const cur = (store.builderCandidates as Array<{ sectionId: string }>) ?? [];
+          const section = req.section as { sectionId: string };
+          write('builderCandidates', [...cur.filter((s) => s.sectionId !== section.sectionId), section].slice(-60));
+          return { ok: true };
+        }
+        case 'CANDIDATE_REMOVE': {
+          const cur = (store.builderCandidates as Array<{ sectionId: string }>) ?? [];
+          write('builderCandidates', cur.filter((s) => s.sectionId !== req.sectionId));
+          return { ok: true };
+        }
+        case 'CANDIDATE_CLEAR':
+          write('builderCandidates', []);
+          return { ok: true };
         case 'BACKUP_IMPORT': {
           const data = req.data as Record<string, unknown>;
           if (typeof data?.schemaVersion !== 'number') return { ok: false, error: 'Not a backup file.' };

@@ -1131,3 +1131,58 @@
 .wdc-plans-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
 .wdc-plans-current { background: #f0f6ff; }
 .wdc-plans-actions { text-align: right; }
+
+/* Build tab: candidates, prefs, generated results */
+.wdc-build { padding: 8px 10px; }
+.wdc-build-cands { margin-bottom: 6px; }
+.wdc-build-course { margin-bottom: 6px; font-size: 12px; }
+.wdc-build-pick { color: #64748b; font-size: 11px; margin-left: 6px; }
+.wdc-build-sec {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 2px 0 2px 12px;
+  font-size: 11.5px;
+  color: #334155;
+}
+.wdc-build-add { display: flex; gap: 6px; margin: 6px 0; }
+.wdc-build-add input {
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  padding: 4px 8px;
+  font-size: 11.5px;
+}
+.wdc-build-add input:first-child { width: 90px; }
+.wdc-build-add input:nth-child(2) { flex: 1; }
+.wdc-build-prefs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 14px;
+  margin: 8px 0;
+  font-size: 11.5px;
+  color: #334155;
+}
+.wdc-build-prefs label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.wdc-build-prefs input[type='range'] { width: 80px; }
+.wdc-build-results { margin-top: 8px; }
+.wdc-build-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  padding: 7px 10px;
+  margin-bottom: 7px;
+  background: #fbfcfe;
+}
+.wdc-build-card-head { display: flex; gap: 8px; align-items: baseline; font-size: 12px; }
+.wdc-build-chosen { color: #334155; font-size: 11.5px; }
+.wdc-build-parts { color: #64748b; font-size: 11px; margin: 3px 0; }
+.wdc-build-actions { display: flex; gap: 12px; }
+
+/* preview banner over the grid */
+.wdc-preview-banner {
+  padding: 6px 12px;
+  background: #fef9c3;
+  border-bottom: 1px solid #fde047;
+  font-size: 11.5px;
+  color: #713f12;
+}

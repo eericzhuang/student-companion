@@ -264,6 +264,17 @@ async function handle(req: ExtRequest, trusted: boolean): Promise<unknown> {
       await setStored('schedule', { ...hit.snapshot, capturedAt: Date.now() });
       return null;
     }
+    case 'CANDIDATE_ADD':
+      await updateStored('builderCandidates', (cur) =>
+        [...cur.filter((s) => s.sectionId !== req.section.sectionId), req.section].slice(-60),
+      );
+      return null;
+    case 'CANDIDATE_REMOVE':
+      await updateStored('builderCandidates', (cur) => cur.filter((s) => s.sectionId !== req.sectionId));
+      return null;
+    case 'CANDIDATE_CLEAR':
+      await setStored('builderCandidates', []);
+      return null;
     case 'BACKUP_IMPORT': {
       const data = req.data;
       if (typeof data !== 'object' || data === null || typeof data.schemaVersion !== 'number') {

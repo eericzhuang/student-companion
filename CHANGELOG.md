@@ -26,6 +26,12 @@ All notable user-facing changes to the extension.
   and remembered (editable in Options → Future terms).
 - Ratings are color-coded everywhere (green ≥3.8, amber ≥2.8, red below),
   and the calendar's Edit view can fix a section's professor and location.
+- **🧩 Schedule builder**: mark sections you're considering with ☆ on Find
+  Course Sections (several per course), then let the Build tab generate every
+  conflict-free combination and rank them by your preferences — avoid early
+  mornings, compact days, professor ratings, less walking. Preview any result
+  on the calendar, save it as a plan, or make it your schedule. All local
+  math, no AI.
 - **🗂 Plans (schedule scenarios)**: save the current schedule as "Plan A",
   "Plan B", …, compare plans side by side (credits, average professor rating,
   earliest class, weekly walking, risky legs) and load one back with a click —

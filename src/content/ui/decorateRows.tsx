@@ -20,6 +20,7 @@ const BADGE_STYLE_ID = 'wdc-badge-styles';
 const CONFLICT_ATTR = 'data-wdc-conflict';
 const RMP_ATTR = 'data-wdc-rmp';
 const ADD_ATTR = 'data-wdc-add';
+const CAND_ATTR = 'data-wdc-cand';
 
 function ensureBadgeStyles(): void {
   if (document.getElementById(BADGE_STYLE_ID)) return;
@@ -146,15 +147,50 @@ function applyAddButton(row: ResultRow, scheduleSections: Section[]): void {
   anchorFor(row).appendChild(btn);
 }
 
+/**
+ * "⭐ candidate" toggle: mark this row's section as an option for the
+ * schedule builder (Build tab in the calendar panel) without committing it.
+ */
+function applyCandidateButton(row: ResultRow, candidateIds: Set<string>): void {
+  if (row.element.querySelector(`[${CAND_ATTR}]`)) return;
+  if (row.meetings.length === 0) return;
+  let on = candidateIds.has(row.sectionId);
+  const btn = document.createElement('button');
+  btn.setAttribute(CAND_ATTR, '1');
+  const paint = () => {
+    btn.className = `wdc-cand-btn${on ? ' on' : ''}`;
+    btn.textContent = on ? '⭐ candidate' : '☆ candidate';
+    btn.title = on
+      ? 'Remove from the schedule builder candidates'
+      : 'Consider this section in the schedule builder (calendar → Build tab)';
+  };
+  paint();
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    on = !on;
+    paint();
+    void sendToBackground(
+      on
+        ? { kind: 'CANDIDATE_ADD', section: rowToSection(row) }
+        : { kind: 'CANDIDATE_REMOVE', sectionId: row.sectionId },
+    ).catch(() => {});
+    if (on) showCaptureToast(`⭐ ${row.courseCode ?? row.sectionId} added to the Build tab.`);
+  });
+  anchorFor(row).appendChild(btn);
+}
+
 export async function decorateRows(rows: ResultRow[], settings: Settings): Promise<void> {
   ensureBadgeStyles();
   const schedule = await getStored('schedule');
   const scheduleSections = schedule?.sections ?? [];
+  const candidateIds = new Set((await getStored('builderCandidates')).map((s) => s.sectionId));
 
   for (const row of rows) {
     attachHoverGhost(row);
     void applyConflictBadge(row, scheduleSections);
     applyAddButton(row, scheduleSections);
+    applyCandidateButton(row, candidateIds);
     if (settings.rmpEnabled) void applyRmpBadge(row);
   }
 }
@@ -163,10 +199,12 @@ export async function decorateRows(rows: ResultRow[], settings: Settings): Promi
 export async function redecorateAll(settings: Settings): Promise<void> {
   const schedule = await getStored('schedule');
   const scheduleSections = schedule?.sections ?? [];
+  const candidateIds = new Set((await getStored('builderCandidates')).map((s) => s.sectionId));
   const rows = scrapeResultRows(document, true);
   for (const row of rows) {
     void applyConflictBadge(row, scheduleSections);
     applyAddButton(row, scheduleSections);
+    applyCandidateButton(row, candidateIds);
     if (settings.rmpEnabled) void applyRmpBadge(row);
   }
 }

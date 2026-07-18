@@ -196,6 +196,22 @@ export interface Settings {
   themeLevel?: number;
   /** walking speed for between-class route warnings, km/h (default 4.8) */
   walkSpeedKmh?: number;
+  /** schedule-builder preference weights (each 0–2; see shared/builder.ts) */
+  builderPrefs?: BuilderPrefs;
+}
+
+/** How much each signal matters when ranking generated schedules (0 = ignore). */
+export interface BuilderPrefs {
+  /** avoid classes before earliestOk */
+  morning: number;
+  /** prefer compact days (small gaps) */
+  compact: number;
+  /** prefer higher-rated professors */
+  ratings: number;
+  /** prefer less walking */
+  walking: number;
+  /** minutes-from-midnight a class may start without a "morning" penalty (default 540 = 9 AM) */
+  earliestOk?: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -285,6 +301,8 @@ export interface StorageShape {
   campusMap: CampusMap;
   /** saved candidate schedules (Plan A / Plan B) */
   scenarios: Scenario[];
+  /** candidate sections the schedule builder may pick from (⭐ on result rows) */
+  builderCandidates: Section[];
 }
 
 /**
@@ -309,4 +327,5 @@ export const STORAGE_DEFAULTS: StorageShape = {
   reqOverrides: {},
   campusMap: { school: null, buildings: {} },
   scenarios: [],
+  builderCandidates: [],
 };
