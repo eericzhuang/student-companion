@@ -1260,11 +1260,25 @@ table.pl-table th { color: #475569; font-size: 12px; }
 .pl-gpa-row-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .pl-gpa-row-head > span:first-child { flex: 1; }
 .pl-gpa-num { font-size: 15px; color: var(--lv-color, #0f4c81); }
-.pl-gpa-whatif { margin-top: 10px; border-top: 1px solid #e2e8f0; padding-top: 8px; }
-.pl-gpa-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
-.pl-gpa-code { flex: 1; font-weight: 600; font-size: 12.5px; }
-.pl-gpa-row input { width: 58px; }
-.pl-gpa-proj { margin-top: 8px; font-size: 13px; }
+.pl-gpa-whatif { margin-top: 10px; border-top: 1px solid #e2e8f0; padding: 12px 2px 8px; font-size: 14px; }
+.pl-gpa-whatif > .pl-muted { font-size: 13px; margin: 0 0 8px; }
+.pl-gpa-row { display: flex; align-items: center; gap: 10px; margin: 7px 0; }
+.pl-gpa-code { flex: 1; font-weight: 600; font-size: 14px; }
+.pl-gpa-cols { margin: 2px 0 0; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; }
+.pl-gpa-cols .pl-gpa-code { font-size: 11.5px; font-weight: 600; color: #64748b; }
+.pl-gpa-col-credits { width: 76px; }
+.pl-gpa-col-grade { width: 92px; }
+.pl-gpa-row input { width: 76px; padding: 6px 8px; font-size: 14px; }
+.pl-gpa-row select { width: 92px; padding: 6px 8px; font-size: 14px; }
+.pl-gpa-proj {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  font-size: 14.5px;
+}
+.pl-gpa-proj b { font-size: 18px; }
 .pl-gpa-up { color: #16a34a; font-weight: 700; }
 .pl-gpa-down { color: #dc2626; font-weight: 700; }
 
@@ -1306,6 +1320,8 @@ table.pl-table th { color: #475569; font-size: 12px; }
 .pl-dark .pl-chat { background: #0f172a; border-color: #283548; }
 .pl-dark .pl-chat-turn.assistant .pl-chat-bubble { background: #1e293b; border-color: #334155; }
 .pl-dark .pl-gpa-strip { background: #16223a; border-color: #283548; color: #cbd5e1; }
+.pl-dark .pl-gpa-whatif { border-top-color: #283548; }
+.pl-dark .pl-gpa-proj { background: #16233f; border-color: #1e3a5f; color: #dbeafe; }
 .pl-dark .pl-prereq-scroll { background: #0f172a; border-color: #283548; }
 .pl-dark .pl-legend { color: #94a3b8; }
 .pl-dark .pl-link-inline { color: #7fb3e3; }

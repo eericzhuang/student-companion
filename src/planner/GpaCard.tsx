@@ -60,6 +60,11 @@ export function GpaCard({ history, candidates }: { history: HistoryCourse[]; can
       {open && (
         <div class="pl-gpa-whatif">
           <p class="pl-muted">Pick grades for current / planned courses to project your GPA:</p>
+          <div class="pl-gpa-row pl-gpa-cols">
+            <span class="pl-gpa-code">Course</span>
+            <span class="pl-gpa-col-credits">Credits</span>
+            <span class="pl-gpa-col-grade">Grade</span>
+          </div>
           {candidates.map((c) => (
             <div class="pl-gpa-row">
               <span class="pl-gpa-code">{c.code}</span>
