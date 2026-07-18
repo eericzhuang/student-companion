@@ -17,6 +17,7 @@ import type {
   ScheduleSnapshot,
   Section,
   Settings,
+  TermConfig,
 } from '../../shared/types';
 import { getStored, onStoredChange } from '../../shared/storage';
 import { sendToBackground, type MapLookupResult, type RmpLookupResult } from '../../background/messages';
@@ -33,6 +34,7 @@ import { cleanInstructorName, displayInstructorName } from '../../shared/fuzzy';
 import { cleanSectionTitle } from '../../shared/schedule';
 import { addManualSection, removeSection, renameSection, updateSectionDetails } from './scheduleEdit';
 import { exportScheduleImage } from './exportImage';
+import { buildIcs, defaultTermStart } from '../../shared/ics';
 import { useDraggable, type Pos } from './useDraggable';
 import { WeekGrid } from './WeekGrid';
 import { isPro } from '../../shared/plan';
@@ -55,6 +57,8 @@ export function CalendarPanel() {
   const panelRef = useRef<HTMLDivElement>(null);
   const [gridScale, setGridScale] = useState(1);
   const [ratings, setRatings] = useState<Map<string, number | null>>(new Map());
+  const [terms, setTerms] = useState<TermConfig[]>([]);
+  const [icsForm, setIcsForm] = useState<{ start: string; end: string } | null>(null);
 
   const defaultPos = { x: Math.max(8, window.innerWidth - 456), y: 80 };
   const { pos, setPos, startDrag, wasDragged } = useDraggable(defaultPos, (p) =>
@@ -67,6 +71,7 @@ export function CalendarPanel() {
     const applySettings = (s: Settings) => {
       setPro(isPro(s)); // animations are a Pro perk
       setWalkSpeed(s.walkSpeedKmh ?? DEFAULT_WALK_KMH);
+      setTerms(s.terms);
     };
     void getStored('settings').then((s) => {
       if (s.panelState.x >= 0 && s.panelState.y >= 0) setPos({ x: s.panelState.x, y: s.panelState.y });
@@ -150,6 +155,50 @@ export function CalendarPanel() {
     return map;
   }, [transitions]);
 
+  // .ics export: use the configured term's dates when known, otherwise ask once
+  // (and remember the answer on the matching term).
+  const icsTerm = (): TermConfig | null =>
+    terms.find((t) => schedule?.termLabel && t.label === schedule.termLabel) ?? terms[0] ?? null;
+
+  const downloadIcs = (termStart?: string, termEnd?: string) => {
+    const ics = buildIcs(sections, { termStart, termEnd, termLabel: schedule?.termLabel ?? null });
+    const blob = new Blob([ics], { type: 'text/calendar' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `schedule${schedule?.termLabel ? `-${schedule.termLabel.replace(/\s+/g, '-').toLowerCase()}` : ''}.ics`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  };
+
+  const onIcsClick = () => {
+    const t = icsTerm();
+    if (t?.startDate) {
+      downloadIcs(t.startDate, t.endDate);
+      return;
+    }
+    const start = defaultTermStart(new Date());
+    const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 16 * 7);
+    const iso = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    setIcsForm({ start: iso(start), end: iso(end) });
+  };
+
+  const submitIcs = () => {
+    if (!icsForm) return;
+    downloadIcs(icsForm.start, icsForm.end);
+    const t = icsTerm();
+    if (t) {
+      void sendToBackground({
+        kind: 'SETTINGS_UPDATE',
+        patch: {
+          terms: terms.map((x) => (x.id === t.id ? { ...x, startDate: icsForm.start, endDate: icsForm.end } : x)),
+        },
+      }).catch(() => {});
+    }
+    setIcsForm(null);
+  };
+
   if (collapsed) {
     return (
       <div
@@ -183,9 +232,45 @@ export function CalendarPanel() {
           >
             📷
           </button>{' '}
+          <button
+            title="Export to your calendar app (.ics for Google/Apple/Outlook)"
+            disabled={sections.length === 0}
+            onClick={onIcsClick}
+          >
+            📆
+          </button>{' '}
           <button onClick={() => setCollapsedPersist(true)}>—</button>
         </span>
       </div>
+      {icsForm && (
+        <div class="wdc-ics-form">
+          <div class="wdc-ics-title">When does {schedule?.termLabel ?? 'the term'} run?</div>
+          <label>
+            First day
+            <input
+              type="date"
+              value={icsForm.start}
+              onInput={(e) => setIcsForm({ ...icsForm, start: (e.target as HTMLInputElement).value })}
+            />
+          </label>
+          <label>
+            Last day
+            <input
+              type="date"
+              value={icsForm.end}
+              onInput={(e) => setIcsForm({ ...icsForm, end: (e.target as HTMLInputElement).value })}
+            />
+          </label>
+          <span>
+            <button class="wdc-capture-btn wdc-map-btn" onClick={submitIcs}>
+              ⬇ Download .ics
+            </button>{' '}
+            <button class="wdc-link-btn" onClick={() => setIcsForm(null)}>
+              cancel
+            </button>
+          </span>
+        </div>
+      )}
       <div class="wdc-panel-sub" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>
           {sections.length} section{sections.length === 1 ? '' : 's'}

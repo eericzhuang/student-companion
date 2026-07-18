@@ -158,6 +158,9 @@ export interface TermConfig {
   id: string;
   label: string; // e.g. "Fall 2026"
   creditCap: number;
+  /** ISO yyyy-mm-dd first/last day of classes — used for calendar (.ics) export */
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface PanelState {

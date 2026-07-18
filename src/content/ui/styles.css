@@ -983,6 +983,28 @@
 .wdc-map-btn { display: inline-block; width: auto; margin: 0 0 0 6px; padding: 4px 10px; font-size: 11px; }
 .wdc-map-note { margin: 8px 2px 0; font-size: 11.5px; color: #475569; line-height: 1.45; }
 .wdc-map-located { font-size: 11.5px; color: #16a34a; font-weight: 600; white-space: nowrap; }
+
+/* Inline .ics export date form */
+.wdc-ics-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: #f0f6ff;
+  border-bottom: 1px solid #dbe4f0;
+  font-size: 11.5px;
+  color: #334155;
+}
+.wdc-ics-title { flex-basis: 100%; font-weight: 600; }
+.wdc-ics-form label { display: flex; align-items: center; gap: 5px; }
+.wdc-ics-form input[type='date'] {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 2px 5px;
+  font-size: 11.5px;
+  background: #fff;
+}
 .wdc-map-fine { color: #94a3b8; font-size: 10.5px; }
 .wdc-map-svg {
   display: block;

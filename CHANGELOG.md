@@ -20,6 +20,10 @@ All notable user-facing changes to the extension.
   (walking speed adjustable; coordinates editable in Options).
 - **📷 Save calendar as image**: one click downloads the week as a crisp PNG
   with rooms, professors, color-coded ratings, and walk warnings included.
+- **📆 Export to your calendar app**: download the schedule as an `.ics` file
+  (weekly recurring events with rooms and professors) and import it into
+  Google, Apple, or Outlook calendars. Term start/end dates are asked once
+  and remembered (editable in Options → Future terms).
 - Ratings are color-coded everywhere (green ≥3.8, amber ≥2.8, red below),
   and the calendar's Edit view can fix a section's professor and location.
 - **💬 Feedback** section in Options — report problems or send suggestions by

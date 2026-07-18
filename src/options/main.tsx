@@ -519,21 +519,36 @@ function TermSection({ settings, patch }: SectionProps) {
     <div class="pl-card">
       <h2>Future terms (for the semester board)</h2>
       <table class="pl-table">
-        {settings.terms.map((t) => (
-          <tr>
-            <td>{t.label}</td>
-            <td>{t.creditCap} credit cap</td>
-            <td style={{ width: '40px' }}>
-              <button
-                class="pl-btn danger"
-                onClick={() => void patch({ terms: settings.terms.filter((x) => x.id !== t.id) })}
-              >
-                ✕
-              </button>
-            </td>
-          </tr>
-        ))}
+        {settings.terms.map((t) => {
+          const setDate = (key: 'startDate' | 'endDate', value: string) =>
+            void patch({
+              terms: settings.terms.map((x) => (x.id === t.id ? { ...x, [key]: value || undefined } : x)),
+            });
+          return (
+            <tr>
+              <td>{t.label}</td>
+              <td>{t.creditCap} credit cap</td>
+              <td title="First day of classes (used for calendar export)">
+                <input type="date" value={t.startDate ?? ''} onChange={(e) => setDate('startDate', (e.target as HTMLInputElement).value)} />
+              </td>
+              <td title="Last day of classes (used for calendar export)">
+                <input type="date" value={t.endDate ?? ''} onChange={(e) => setDate('endDate', (e.target as HTMLInputElement).value)} />
+              </td>
+              <td style={{ width: '40px' }}>
+                <button
+                  class="pl-btn danger"
+                  onClick={() => void patch({ terms: settings.terms.filter((x) => x.id !== t.id) })}
+                >
+                  ✕
+                </button>
+              </td>
+            </tr>
+          );
+        })}
       </table>
+      {settings.terms.length > 0 && (
+        <p class="pl-muted">Term start/end dates power the calendar 📆 .ics export (they're optional).</p>
+      )}
       <div class="pl-row" style={{ marginTop: '8px' }}>
         <input
           type="text"
