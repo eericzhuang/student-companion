@@ -39,6 +39,7 @@ import { cleanInstructorName, displayInstructorName } from '../../shared/fuzzy';
 import { cleanSectionTitle } from '../../shared/schedule';
 import { addFinal, addManualSection, removeFinal, removeSection, renameSection, updateSectionDetails } from './scheduleEdit';
 import { finalConflictIds, formatFinalDate, sortFinals, timeInputToMinutes } from '../../shared/finals';
+import { buildShareFile, parseShareFile, sharedCourses } from '../../shared/friendShare';
 import { exportScheduleImage } from './exportImage';
 import { buildIcs, defaultTermStart } from '../../shared/ics';
 import { useDraggable, type Pos } from './useDraggable';
@@ -47,6 +48,11 @@ import { isPro } from '../../shared/plan';
 
 /** Search-result section currently hovered (set by decorateRows). */
 export const ghostSection = signal<Section | null>(null);
+
+/** A friend's imported schedule (session-only — never persisted or uploaded).
+ *  Module-level so it survives switching panel tabs. */
+const friendShareState = signal<{ name: string; termLabel: string | null; sections: Section[] } | null>(null);
+const friendOverlayOn = signal(false);
 
 type CalView = 'grid' | 'free' | 'map' | 'build' | 'plans' | 'edit';
 
@@ -329,12 +335,21 @@ export function CalendarPanel() {
         </div>
       ) : view === 'grid' ? (
         <>
+          {!preview && friendOverlayOn.value && friendShareState.value && (
+            <div class="wdc-preview-banner">
+              👥 Overlaying <b>{friendShareState.value.name}</b>'s schedule (dashed).{' '}
+              <button class="wdc-link-btn" onClick={() => (friendOverlayOn.value = false)}>
+                hide
+              </button>
+            </div>
+          )}
           <WeekGrid
             sections={preview ? preview.sections : sections}
             ghost={preview ? null : ghostSection.value}
             warnings={preview ? undefined : gridWarnings}
             scale={gridScale}
             ratings={ratings}
+            overlay={!preview && friendOverlayOn.value ? friendShareState.value?.sections ?? null : null}
             onEventClick={(section, meeting) => setSelEvent({ section, meeting })}
           />
           {!preview && (schedule?.finals?.length ?? 0) > 0 && <FinalsStrip finals={schedule!.finals!} />}
@@ -1077,6 +1092,112 @@ function ScenarioList({
         Ratings/walk columns use the same data as the calendar — locate buildings in 🗺 Route for
         walk numbers. Loading a plan replaces the calendar; unsaved work is stashed automatically.
       </div>
+      <FriendCompare schedule={schedule} />
+    </div>
+  );
+}
+
+/**
+ * Compare with a friend: exchange tiny schedule files (codes + times only, no
+ * professors/locations, no server) and see shared classes, mutual free time,
+ * and their week dashed over yours.
+ */
+function FriendCompare({ schedule }: { schedule: ScheduleSnapshot | null }) {
+  const friend = friendShareState.value;
+  const [name, setName] = useState('');
+  const [err, setErr] = useState<string | null>(null);
+  const mine = schedule?.sections ?? [];
+
+  const share = () => {
+    if (!schedule || mine.length === 0) return;
+    const file = buildShareFile(schedule, name || 'My schedule');
+    const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `schedule-share${schedule.termLabel ? `-${schedule.termLabel.replace(/\s+/g, '-').toLowerCase()}` : ''}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  };
+
+  const pick = (e: Event) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    void file.text().then((text) => {
+      const parsed = parseShareFile(text);
+      if (!parsed) {
+        setErr("That doesn't look like a schedule share file.");
+        return;
+      }
+      setErr(null);
+      friendShareState.value = parsed;
+      friendOverlayOn.value = true;
+    });
+    (e.target as HTMLInputElement).value = '';
+  };
+
+  const overlap = friend ? sharedCourses(mine, friend.sections) : [];
+  const mutualFree = friend ? computeFreeSlots([...mine, ...friend.sections]) : [];
+
+  return (
+    <div class="wdc-friend">
+      <div class="wdc-edit-add-title">👥 Compare with a friend</div>
+      <div class="wdc-friend-row">
+        <input
+          placeholder="Your name (goes in the file)"
+          value={name}
+          onInput={(e) => setName((e.target as HTMLInputElement).value)}
+        />
+        <button class="wdc-capture-btn wdc-map-btn" disabled={mine.length === 0} onClick={share}>
+          ⬇ Share mine
+        </button>
+        <label class="wdc-capture-btn wdc-map-btn" style={{ cursor: 'pointer' }}>
+          ⬆ Load a friend's…
+          <input type="file" accept="application/json,.json" style={{ display: 'none' }} onChange={pick} />
+        </label>
+      </div>
+      {err && <div class="wdc-edit-error">{err}</div>}
+      {friend && (
+        <div class="wdc-friend-result">
+          <div>
+            Comparing with <b>{friend.name}</b>
+            {friend.termLabel ? ` (${friend.termLabel})` : ''} — {friend.sections.length} classes.{' '}
+            <button
+              class="wdc-link-btn"
+              onClick={() => (friendOverlayOn.value = !friendOverlayOn.value)}
+            >
+              {friendOverlayOn.value ? 'hide on calendar' : 'show on calendar'}
+            </button>{' '}
+            <button
+              class="wdc-link-btn"
+              onClick={() => {
+                friendShareState.value = null;
+                friendOverlayOn.value = false;
+              }}
+            >
+              clear
+            </button>
+          </div>
+          <div>
+            🤝 Same classes: {overlap.length > 0 ? overlap.join(', ') : <i>none</i>}
+          </div>
+          <div class="wdc-friend-free">
+            🕐 Free together:{' '}
+            {mutualFree.every((d) => d.slots.length === 0) ? (
+              <i>no common gaps</i>
+            ) : (
+              mutualFree
+                .filter((d) => d.slots.length > 0)
+                .map((d) => `${d.label} ${d.slots.map((s) => `${formatMinutes(s.startMin)}–${formatMinutes(s.endMin)}`).join(', ')}`)
+                .join(' · ')
+            )}
+          </div>
+          <div class="wdc-map-note wdc-map-fine">
+            Share files contain course codes and times only — no professors, rooms, or grades — and
+            are exchanged by you, never uploaded.
+          </div>
+        </div>
+      )}
     </div>
   );
 }
