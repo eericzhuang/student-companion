@@ -33,6 +33,12 @@ const STEPS: Step[] = [
     body: 'Completed work earns XP — 10 per course, 40 per requirement group, 200 per degree. Click your level card to see all 10 ranks, their looks, and try any of them on.',
   },
   {
+    tab: 'progress',
+    icon: '🎓',
+    title: 'GPA & what-if grades',
+    body: 'Your cumulative GPA, computed from your history. Open "What-if grades", pick hypothetical grades for this term\'s courses, and watch the projected GPA move before finals do.',
+  },
+  {
     tab: 'whatif',
     icon: '🔮',
     title: 'What-if',
@@ -72,7 +78,17 @@ const STEPS: Step[] = [
     tab: 'progress',
     icon: '🖥',
     title: 'And on Workday itself…',
-    body: 'A floating schedule calendar with conflict + walk-time warnings (click any class for its professor, rating, and room; the Route view maps your day), a capture widget that saves your courses into this planner, and RateMyProfessors ratings next to instructor names. Toggle everything in ⚙ Options. Enjoy! 🎉',
+    body: 'A floating schedule calendar with conflict + walk-time warnings (click any class for its professor, rating, and room; the Route view maps your day), a capture widget that saves your courses into this planner, and RateMyProfessors ratings next to instructor names. Toggle everything in ⚙ Options.',
+  },
+  {
+    icon: '🧩',
+    title: 'Build the perfect schedule',
+    body: 'On Find Course Sections, tap ☆ candidate on every section you\'re considering. The calendar\'s Build tab then generates every conflict-free combination, ranked by your preferences — mornings, gaps, ratings, walking. Preview one, save it as a plan, or make it your schedule.',
+  },
+  {
+    icon: '🗂',
+    title: 'Plans, exports & backup',
+    body: 'The Plans tab compares saved schedules side by side (credits, ratings, walking) and swaps between them safely. Export the calendar as a 📷 image or 📆 .ics for Google/Apple/Outlook, and back up all your data from ⚙ Options. Enjoy! 🎉',
   },
 ];
 
