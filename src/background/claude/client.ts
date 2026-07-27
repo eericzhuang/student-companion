@@ -204,7 +204,11 @@ async function anthropicMessages(body: {
     throw new Error("Your subscription isn't activated yet — open the Upgrade page and paste your activation code.");
   }
   if (!viaRelay && !apiKey) {
-    throw new Error('No Claude API key configured. Add one in the extension options.');
+    throw new Error(
+      settings.admin
+        ? 'Owner mode: no Claude API key configured — add one in the extension options.'
+        : 'AI for your plan is still being switched on during the beta — no setup needed on your side. Please try again soon.',
+    );
   }
   const model = body.model || settings.claudeModel || 'claude-sonnet-5';
   const stopKeepAlive = startKeepAlive();

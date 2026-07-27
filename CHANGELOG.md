@@ -96,7 +96,7 @@ All notable user-facing changes to the extension.
 - **Priority AI lane** — run up to 3 AI requests at once (Free/Pro run one at
   a time).
 
-_During the beta, Pro and Supreme are free to try; AI features use your own
-Claude API key. At the paid launch, AI is included with the subscription
-(runs through our service — no API key), with a generous monthly allowance
-per plan._
+_During the beta, Pro and Supreme are free to try, with AI switched on for
+users in waves — nothing to configure. At the paid launch, AI is included
+with the subscription (runs through our service — no API key), with a
+generous monthly allowance per plan._

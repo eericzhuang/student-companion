@@ -79,14 +79,16 @@ chrome.action.onClicked.addListener(() => {
 });
 
 /** Throw a friendly error if AI isn't available for the current plan/license state. */
-function requireAi(status: ReturnType<typeof aiCallStatus>, feature: string): void {
+function requireAi(status: ReturnType<typeof aiCallStatus>, feature: string, admin = false): void {
   if (status.ok) return;
   throw new Error(
     status.reason === 'not-pro'
       ? `${feature} is a Pro feature. Upgrade to Pro to use it.`
       : status.reason === 'needs-license'
         ? `Your subscription isn't activated on this device — open the Upgrade page and paste your activation code.`
-        : `Pro is active, but AI needs a Claude API key configured in Options for now.`,
+        : admin
+          ? `Owner mode: AI needs a Claude API key configured in Options (billing is off in this build).`
+          : `AI for your plan is still being switched on during the beta — no API key or setup needed on your side. Please try again soon.`,
   );
 }
 
@@ -201,7 +203,7 @@ async function handle(req: ExtRequest, trusted: boolean): Promise<unknown> {
     }
     case 'AI_CHAT': {
       const { settings } = await getAllStored();
-      requireAi(aiCallStatus(settings), 'The AI advisor');
+      requireAi(aiCallStatus(settings), 'The AI advisor', settings.admin === true);
       const reply = await chatAdvisor(req.context, req.messages);
       const lastUser = [...req.messages].reverse().find((m) => m.role === 'user');
       await recordAiHistory(
@@ -214,7 +216,7 @@ async function handle(req: ExtRequest, trusted: boolean): Promise<unknown> {
     case 'DEGREE_RESEARCH': {
       const { settings } = await getAllStored();
       requireSupreme(settings, 'Auto-find degree requirements');
-      requireAi(aiCallStatus(settings), 'AI degree research');
+      requireAi(aiCallStatus(settings), 'AI degree research', settings.admin === true);
       const degree = await researchDegreeRequirements(req.school, req.program);
       // Keep the full program in the entry so history can show every requirement.
       await recordAiHistory(
@@ -228,7 +230,7 @@ async function handle(req: ExtRequest, trusted: boolean): Promise<unknown> {
     case 'PREREQ_RESEARCH': {
       const { settings } = await getAllStored();
       requireSupreme(settings, 'Auto-find prerequisites');
-      requireAi(aiCallStatus(settings), 'AI prerequisite lookup');
+      requireAi(aiCallStatus(settings), 'AI prerequisite lookup', settings.admin === true);
       const result = await researchPrerequisites(req.school, req.course);
       await recordAiHistory(
         'prereq-research',

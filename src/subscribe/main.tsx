@@ -322,8 +322,9 @@ function App() {
         <div class="sub-note">
           <b>Beta:</b> Pro and Supreme are <b>free while we're in beta</b> — no card, no charge, just
           click to activate. The prices shown are the planned launch pricing; when billing goes live
-          you'll be asked before anything is ever charged. During the beta, AI features run with your
-          own Claude API key (added in Options); at launch AI is included — no key needed.
+          you'll be asked before anything is ever charged. AI features are being switched on for
+          beta users in waves — nothing to configure on your side, and at launch AI is included
+          with the subscription.
         </div>
       )}
 
@@ -349,9 +350,9 @@ function App() {
             </p>
           ) : (
             <p>
-              During the beta, yes — Pro/Supreme AI features run with your own Claude API key (get
-              one at console.anthropic.com and add it in Options; use a key with a spend limit).
-              At the paid launch AI is included with the subscription — no key at all.
+              <b>No.</b> There's nothing to sign up for or configure — AI runs through our service.
+              During the beta it's being enabled for users in waves, and at the paid launch it's
+              included with Pro and Supreme with a generous monthly allowance.
             </p>
           )}
         </details>

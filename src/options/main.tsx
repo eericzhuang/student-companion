@@ -48,10 +48,11 @@ function App() {
       <ApiKeySection settings={settings} patch={patch} />
       <TermSection settings={settings} patch={patch} />
       <CampusMapSection settings={settings} patch={patch} />
-      <AdvancedSelectors settings={settings} patch={patch} />
+      {settings.admin && <AdvancedSelectors settings={settings} patch={patch} />}
       <FeedbackSection settings={settings} />
-      <AdminSection settings={settings} patch={patch} />
+      {settings.admin && <AdminSection settings={settings} patch={patch} />}
       <BackupSection />
+      {!settings.admin && <AdminSection settings={settings} patch={patch} />}
       <p class="pl-muted" style={{ textAlign: 'center', marginTop: '18px' }}>
         Something broken, or a school layout we don't recognize?{' '}
         <a href="mailto:eric2007118@gmail.com?subject=Student%20Companion%20support">
@@ -268,14 +269,13 @@ function AcademicHistorySection() {
       <h2>Academic history (upload transcript)</h2>
       <p class="pl-muted">
         Upload your <b>unofficial transcript</b> (PDF) or paste its text. This is the reliable way
-        to tell the planner what you've completed — no Workday scraping needed. Parsing happens on
-        your device{current ? '' : ''}; with a Claude API key it's more accurate, otherwise a
-        built-in parser is used.
+        to tell the planner what you've completed — no Workday scraping needed. A built-in parser
+        runs on your device; with <b>Pro</b>, AI parsing is more accurate.
       </p>
       <p class="pl-muted">
         <b>Privacy tip:</b> transcript headers often include your name and student ID. With AI
-        parsing on, the text is sent to Claude under your own key — delete that header line first
-        if you'd rather not send it.
+        parsing (Pro), the text is sent to the AI service — delete that header line first if
+        you'd rather not send it.
       </p>
 
       {current && (
@@ -444,16 +444,17 @@ function ApiKeySection({ settings, patch }: SectionProps) {
     );
   }
 
-  // Billing live: AI runs through our relay on the subscription — there is no
-  // key to enter, so the section reduces to a status + connection test.
-  if (billingEnabled()) {
+  // Customer view: AI runs through our service on the subscription — there is
+  // no key to enter, so the section reduces to a status + connection test.
+  // (The BYO-key form below is owner-only tooling for development.)
+  if (billingEnabled() || !settings.admin) {
     return (
       <div class="pl-card">
         <h2>AI (Pro) — included with your plan</h2>
         <p class="pl-muted">
-          AI runs on our servers as part of your subscription — <b>no API key needed</b>. Each
-          plan includes a generous monthly AI allowance; if you somehow use it up, it resets at
-          the start of the next month.
+          AI runs through our service as part of your subscription — <b>no API key to manage</b>.
+          Each plan includes a generous monthly AI allowance; if you somehow use it up, it resets
+          at the start of the next month.
         </p>
         <div class="pl-row">
           <button class="pl-btn secondary" disabled={testing} onClick={() => void runTest()}>
@@ -474,12 +475,11 @@ function ApiKeySection({ settings, patch }: SectionProps) {
 
   return (
     <div class="pl-card">
-      <h2>AI (Pro) — Claude API key</h2>
+      <h2>👑 AI — Claude API key (owner only)</h2>
       <p class="pl-muted">
-        You're on <b>Pro</b> (beta). During the beta, AI uses a Claude API key you provide. The
-        key is sent only to api.anthropic.com and stored unencrypted on this device — use a key
-        with a spend limit. Get one at console.anthropic.com. At launch this disappears: AI will
-        be included with the subscription, no key needed.
+        Development tooling — customers never see this card; their AI runs through the service.
+        The key is sent only to api.anthropic.com and stored unencrypted on this device — use a
+        key with a spend limit. Get one at console.anthropic.com.
       </p>
       <div class="pl-row">
         <input
@@ -970,6 +970,7 @@ function FeedbackSection({ settings }: { settings: Settings }) {
 }
 
 function AdminSection({ settings, patch }: SectionProps) {
+  const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -977,7 +978,10 @@ function AdminSection({ settings, patch }: SectionProps) {
     return (
       <div class="pl-card" style={{ borderColor: '#16a34a' }}>
         <h2>👑 Owner mode</h2>
-        <p class="pl-muted">Owner unlock active — Pro features are enabled for you.</p>
+        <p class="pl-muted">
+          Owner unlock active — Pro features plus owner-only tooling (Claude API key, selector
+          overrides) are visible. Customers see none of this.
+        </p>
         <button
           class="pl-btn secondary"
           onClick={() => void patch({ admin: false, plan: 'free' })}
@@ -997,24 +1001,31 @@ function AdminSection({ settings, patch }: SectionProps) {
     }
   };
 
+  // Customer view: no owner card — just a discreet footer link that reveals
+  // the unlock input on demand.
   return (
-    <div class="pl-card">
-      <h2>Owner access</h2>
-      <p class="pl-muted">If you're the app owner, enter your unlock code to enable Pro.</p>
-      <div class="pl-row">
-        <input
-          type="password"
-          placeholder="Owner code"
-          value={code}
-          onInput={(e) => setCode((e.target as HTMLInputElement).value)}
-          onKeyDown={(e) => e.key === 'Enter' && void submit()}
-        />
-        <button class="pl-btn" onClick={() => void submit()}>
-          Unlock
+    <p class="pl-muted" style={{ textAlign: 'center', marginTop: '6px' }}>
+      {open ? (
+        <span class="pl-row" style={{ justifyContent: 'center' }}>
+          <input
+            type="password"
+            placeholder="Owner code"
+            style={{ width: '180px', flex: '0 0 auto' }}
+            value={code}
+            onInput={(e) => setCode((e.target as HTMLInputElement).value)}
+            onKeyDown={(e) => e.key === 'Enter' && void submit()}
+          />
+          <button class="pl-btn" style={{ flex: '0 0 auto' }} onClick={() => void submit()}>
+            Unlock
+          </button>
+          {error && <span class="pl-error" style={{ margin: 0 }}>{error}</span>}
+        </span>
+      ) : (
+        <button class="pl-link-inline" style={{ opacity: 0.6 }} onClick={() => setOpen(true)}>
+          owner access
         </button>
-      </div>
-      {error && <div class="pl-error">{error}</div>}
-    </div>
+      )}
+    </p>
   );
 }
 
