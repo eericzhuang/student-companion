@@ -1,6 +1,6 @@
 # Privacy Policy — Student Companion for Workday
 
-_Last updated: July 15, 2026_
+_Last updated: July 28, 2026_
 
 Student Companion for Workday (“the extension”) helps students see their
 schedule, professor ratings, and degree progress while using their university's
@@ -28,10 +28,13 @@ Stored in `chrome.storage.local` on your computer only:
 - Degree requirements you import and your planner state (term assignments,
   manual adjustments, prerequisites, equivalents).
 - Cached RateMyProfessors ratings and your school selection.
-- Your settings, subscription tier, and subscription activation code. During
-  the beta only, AI features use an Anthropic API key you provide — **that key
-  is stored unencrypted on your device**; we recommend a key with a spending
-  limit. On paid plans no API key exists at all.
+- Saved schedule plans, final-exam entries, campus building coordinates, and
+  any friend-compare schedule file you import (friend files contain course
+  codes and times only, and are never uploaded anywhere).
+- Your settings, subscription tier, and subscription activation code. Regular
+  users never enter or hold an API key. (Developer builds with owner mode
+  unlocked can configure an Anthropic API key for testing — stored unencrypted
+  on that device only.)
 - A log of your AI results (viewable and deletable in the AI History tab).
 
 You can delete everything by removing the extension, or clear individual items
@@ -62,9 +65,10 @@ from the extension's own UI.
      monthly total of your AI usage (token counts converted to cost), kept
      with your subscription record so we can enforce the plan's included
      allowance.
-   - **Beta (bring-your-own-key):** the request goes directly from your
-     browser to `api.anthropic.com` using your own API key; no server of ours
-     is involved.
+   - **Beta:** AI is being switched on for users in waves through the same
+     relay; there is nothing to configure and no API key to hold. (Developer
+     builds with owner mode unlocked can instead send requests directly from
+     the browser to `api.anthropic.com` with a locally configured key.)
 3. **Subscription verification** (billing server, when paid plans are live): an
    opaque activation code is exchanged with our billing endpoint to confirm an
    active subscription. Payments are processed entirely by **Stripe**; the
@@ -74,6 +78,15 @@ from the extension's own UI.
    permission for **that one site**, fetches that single page without your
    cookies, and extracts its text locally (then sends it to Anthropic only if
    you use AI parsing, per item 2). No other browsing data is touched.
+5. **Campus map lookups** (OpenStreetMap services): when you click “Locate
+   buildings” in the calendar's Route view, the **names of your class
+   buildings** and your school name are sent to `nominatim.openstreetmap.org`
+   to find their coordinates, and those coordinates are sent to
+   `routing.openstreetmap.de` to draw the walking path between classes. Only
+   building names and coordinates are sent — never your identity, courses, or
+   schedule details — and only when you use the feature. Per OpenStreetMap's
+   usage policy these requests identify the extension (not you) via the
+   developer's contact email.
 
 ## What the extension reads on Workday
 

@@ -28,18 +28,13 @@ Google review time._
 
 ---
 
-## Step 1 — Host the privacy policy at a public URL (required)
+## Step 1 — Host the privacy policy at a public URL — ✅ DONE
 
-The dashboard needs a **URL**, not a file. Fastest path (GitHub Pages):
-
-1. Create a public GitHub repo (e.g. `student-companion-legal`).
-2. Add `docs/PRIVACY_POLICY.md` (and optionally `TERMS_OF_SERVICE.md`) as
-   `index.md` / `terms.md`.
-3. Repo Settings → Pages → deploy from branch → `main`.
-4. Your policy URL becomes
-   `https://<your-username>.github.io/student-companion-legal/`.
-
-Any stable public URL works (Notion public page, personal site, etc.).
+GitHub Pages is live for this repo:
+**<https://eericzhuang.github.io/student-companion/>** (links to the privacy
+policy and terms). Pages redeploys automatically on every push to `main`, so
+the hosted copy is always the latest committed version. Use that URL in the
+dashboard's privacy-policy field.
 
 ## Step 2 — Developer account (one-time, ~15 min)
 
@@ -76,12 +71,14 @@ Any stable public URL works (Notion public page, personal site, etc.).
   > completed — right inside your university's Workday Student portal.
   >
   > 🗓 LIVE CALENDAR — floating week view on Find Course Sections with
-  > conflict highlighting and free-time view.
+  > conflict highlighting, free-time view, walk-time warnings, finals, and
+  > export as image or .ics.
   > ⭐ PROFESSOR RATINGS — RateMyProfessors ratings and comments inline.
   > 🎓 DEGREE PLANNER — import your degree requirements, track multiple
-  > degrees, see overlap, and lay out future semesters (prereq-aware).
-  > ✨ AI ADVISOR (Pro) / deep research (Supreme) — uses your own Claude API
-  > key during the beta.
+  > degrees, GPA & what-if grades, see overlap, and lay out future semesters
+  > (prereq-aware). Dark mode included.
+  > ✨ AI ADVISOR (Pro) / deep research (Supreme) — included with the plan,
+  > nothing to configure (rolling out to beta users in waves).
   >
   > Your data stays on your device — no account, no developer server, no
   > analytics. Privacy policy: <your URL>.
@@ -99,10 +96,14 @@ courses.”
 **Permission justifications — paste these:**
 
 - `storage` — “Stores the user's schedule cache, professor-rating cache,
-  degree plans, settings, and the user's own Claude API key locally on the
+  degree plans, campus building coordinates, and settings locally on the
   device; nothing is sent to any server we operate.”
-- `alarms` — “Schedules periodic housekeeping: expiring the 7-day
-  RateMyProfessors cache and re-checking the subscription license daily.”
+- `alarms` — “Schedules periodic housekeeping (expiring the 7-day
+  RateMyProfessors cache, daily license re-check) and the registration-window
+  reminders the user sets per term.”
+- `notifications` — “Shows the registration-window reminder the user
+  explicitly schedules per term (24 hours and 10 minutes before their
+  registration opens). Local only; no data leaves the device.”
 - `https://*.myworkday.com/*` — “Runs on the university's Workday Student
   portal to read the schedule/course data the logged-in student already sees
   and render the companion calendar and planner UI. Each school has its own
@@ -110,9 +111,16 @@ courses.”
 - `https://www.ratemyprofessors.com/*` — “Fetches public professor ratings for
   instructor names shown on the student's course pages, so ratings appear
   inline.”
-- `https://api.anthropic.com/*` — “Sends AI planning requests directly to
-  Anthropic's API using the user's own API key, entered by the user in
-  Options. No intermediary server; only on explicit user action.”
+- `https://api.anthropic.com/*` — “Sends AI planning requests to Anthropic's
+  API, only on explicit user action (e.g. asking the AI advisor or parsing a
+  transcript the user uploaded).”
+- `https://nominatim.openstreetmap.org/*` — “Free geocoding: converts the
+  campus building names on the user's schedule into coordinates for the
+  calendar's walking-route view. Only building names and the school name are
+  sent, and only when the user clicks ‘Locate buildings’.”
+- `https://routing.openstreetmap.de/*` — “Free walking-route lookup: sends
+  pairs of building coordinates to draw the walking path between consecutive
+  classes in the Route view. Coordinates only; no personal data.”
 - `optional_host_permissions https://*/*` — “Requested at runtime for ONE
   specific origin at a time, only when the user pastes the URL of their
   university's degree-requirements page, to fetch that single page without
@@ -134,8 +142,9 @@ courses.”
 - ✅ Personally identifiable information (instructor names go to
   RateMyProfessors; transcript text sent to Anthropic can contain the
   student's name)
-- ✅ Authentication information (the user's own Anthropic API key, stored
-  locally, sent only to Anthropic as its auth)
+- ✅ Authentication information (the subscription activation code, stored
+  locally and exchanged only with our billing endpoint; owner/dev builds can
+  additionally store an Anthropic API key locally)
 - ✅ Website content (Workday schedule/history text and catalog pages, sent to
   Anthropic only when the user invokes AI)
 - ❌ Everything else (health, financial, location, web history, activity,
