@@ -10,6 +10,7 @@
  */
 import type { CampusBuilding, CampusMap } from '../shared/types';
 import { getStored, setStored } from '../shared/storage';
+import { haversineMeters } from '../shared/route';
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
 // Nominatim asks for identification; fetch can't set User-Agent, so use the
@@ -44,11 +45,28 @@ async function nominatimLookup(
   return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
 }
 
-// ---------- Google Maps Geocoding (primary when an owner key is configured) ----------
+// ---------- Google Maps lookups (primary when an owner key is configured) ----------
 
+const GOOGLE_FINDPLACE = 'https://maps.googleapis.com/maps/api/place/findplacefromtext/json';
 const GOOGLE_GEOCODE = 'https://maps.googleapis.com/maps/api/geocode/json';
 
-/** Pure URL builder (unit-tested): campus-biased Google geocode request. */
+/** Results farther than this from the campus center are considered wrong —
+ *  a geocoder that "helpfully" matched some same-named place elsewhere. */
+const MAX_CAMPUS_DISTANCE_M = 10_000;
+
+/** Pure (unit-tested): Places "find place from text" — the right Google API
+ *  for named POIs like campus buildings. Biased to a 5 km campus circle. */
+export function googleFindPlaceUrl(
+  query: string,
+  key: string,
+  center?: { lat: number; lng: number },
+): string {
+  let url = `${GOOGLE_FINDPLACE}?input=${encodeURIComponent(query)}&inputtype=textquery&fields=geometry&key=${encodeURIComponent(key)}`;
+  if (center) url += `&locationbias=circle%3A5000%40${center.lat}%2C${center.lng}`;
+  return url;
+}
+
+/** Pure (unit-tested): campus-biased Google geocode request (fallback). */
 export function googleGeocodeUrl(
   query: string,
   key: string,
@@ -64,24 +82,55 @@ export function googleGeocodeUrl(
   return url;
 }
 
+/** Pure (unit-tested): keep only results that are actually on/near campus. */
+export function plausibleOnCampus(
+  hit: { lat: number; lng: number },
+  center?: { lat: number; lng: number },
+): boolean {
+  if (!Number.isFinite(hit.lat) || !Number.isFinite(hit.lng)) return false;
+  if (!center) return true;
+  return haversineMeters(hit, center) <= MAX_CAMPUS_DISTANCE_M;
+}
+
 async function googleLookup(
   query: string,
   key: string,
   center?: { lat: number; lng: number },
 ): Promise<{ lat: number; lng: number } | null> {
+  // 1 — Places text search: purpose-built for "Statler Hall"-style names.
+  try {
+    const res = await fetch(googleFindPlaceUrl(query, key, center), {
+      headers: { Accept: 'application/json' },
+    });
+    if (res.ok) {
+      const data = (await res.json()) as {
+        status: string;
+        candidates?: Array<{ geometry?: { location?: { lat: number; lng: number } } }>;
+      };
+      const loc = data.status === 'OK' ? data.candidates?.[0]?.geometry?.location : undefined;
+      if (loc && plausibleOnCampus(loc, center)) return { lat: loc.lat, lng: loc.lng };
+    }
+  } catch {
+    // fall through to the geocoder
+  }
+  // 2 — Geocoding API fallback. Reject approximate matches: those are city or
+  // campus centroids, which is exactly the "inaccurate conversion" failure.
   const res = await fetch(googleGeocodeUrl(query, key, center), {
     headers: { Accept: 'application/json' },
   });
   if (!res.ok) return null;
   const data = (await res.json()) as {
     status: string;
-    results?: Array<{ geometry?: { location?: { lat: number; lng: number } } }>;
+    results?: Array<{
+      partial_match?: boolean;
+      geometry?: { location?: { lat: number; lng: number }; location_type?: string };
+    }>;
   };
   if (data.status !== 'OK') return null;
-  const loc = data.results?.[0]?.geometry?.location;
-  return loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lng)
-    ? { lat: loc.lat, lng: loc.lng }
-    : null;
+  const top = data.results?.[0];
+  const loc = top?.geometry?.location;
+  if (!loc || top.geometry?.location_type === 'APPROXIMATE') return null;
+  return plausibleOnCampus(loc, center) ? { lat: loc.lat, lng: loc.lng } : null;
 }
 
 /** Current map, reset if the school changed since it was built. */
@@ -131,6 +180,7 @@ export async function geocodeBuildings(names: string[]): Promise<MapLookupResult
         if (!hit && map.center && !/\b(hall|center|centre|building|library|lab|auditorium)\b/i.test(name)) {
           hit = await nominatimLookup(`${name} Hall`, map.center);
         }
+        if (hit && !plausibleOnCampus(hit, map.center)) hit = null;
       }
     } catch {
       hit = null; // offline / blocked — treated as not found
@@ -140,6 +190,24 @@ export async function geocodeBuildings(names: string[]): Promise<MapLookupResult
   }
   await setStored('campusMap', map);
   return { map, missing };
+}
+
+/**
+ * Throw away every auto-located coordinate (✍️ manual entries survive) and
+ * geocode the given names again with the current geocoder. This is how stale
+ * results get fixed after configuring a Google key — located buildings are
+ * cached permanently and would otherwise keep their old OSM coordinates.
+ */
+export async function relocateBuildings(names: string[]): Promise<MapLookupResult> {
+  const map = await currentMap();
+  const manualOnly: Record<string, CampusBuilding> = {};
+  for (const [name, b] of Object.entries(map.buildings)) {
+    if (b.source === 'manual') manualOnly[name] = b;
+  }
+  // Drop the cached center too, so it re-resolves with the better geocoder.
+  await setStored('campusMap', { school: map.school, buildings: manualOnly });
+  const all = new Set([...names, ...Object.keys(map.buildings)]);
+  return geocodeBuildings([...all]);
 }
 
 /** Full-map replacement from the Options editor (single-writer convention). */

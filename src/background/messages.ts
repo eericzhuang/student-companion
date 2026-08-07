@@ -48,6 +48,7 @@ export type ExtRequest =
   | { kind: 'REQ_OVERRIDE_SET'; key: string; value: ReqOverrideValue | null }
   // --- campus map (walk-time warnings) ---
   | { kind: 'MAP_GEOCODE'; buildings: string[] }
+  | { kind: 'MAP_RELOCATE'; buildings: string[] }
   | { kind: 'MAP_ROUTE'; from: { lat: number; lng: number }; to: { lat: number; lng: number } }
   | { kind: 'MAP_SET'; map: CampusMap }
   // --- schedule scenarios (Plan A / Plan B) ---

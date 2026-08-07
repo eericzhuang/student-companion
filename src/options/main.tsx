@@ -694,6 +694,21 @@ function CampusMapSection({ settings, patch }: SectionProps) {
   const [name, setName] = useState('');
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
+  const [relocating, setRelocating] = useState(false);
+
+  const relocate = async () => {
+    if (!map) return;
+    setRelocating(true);
+    try {
+      const res = await sendToBackground<{ map: CampusMap }>({
+        kind: 'MAP_RELOCATE',
+        buildings: Object.keys(map.buildings),
+      });
+      setMap(res.map);
+    } finally {
+      setRelocating(false);
+    }
+  };
 
   useEffect(() => {
     void getStored('campusMap').then(setMap);
@@ -764,6 +779,16 @@ function CampusMapSection({ settings, patch }: SectionProps) {
         />
         <span class="pl-muted">km/h (4.8 ≈ normal pace; estimates include a 1.3× detour factor)</span>
       </div>
+      {entries.length > 0 && (
+        <p class="pl-muted">
+          Wrong coordinates are cached until refreshed:{' '}
+          <button class="pl-link-inline" disabled={relocating} onClick={() => void relocate()}>
+            {relocating ? '⏳ re-locating…' : '↻ re-locate all buildings'}
+          </button>{' '}
+          re-resolves every auto-located building with the current geocoder (✍️ manual entries are
+          kept).
+        </p>
+      )}
       {entries.length > 0 && (
         <table class="pl-table">
           <thead>

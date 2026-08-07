@@ -16,7 +16,7 @@ import {
   testAiConnection,
 } from './claude/client';
 import { heuristicParseDegree } from './degreeHeuristic';
-import { fetchWalkingRoute, geocodeBuildings, setCampusMap } from './map';
+import { fetchWalkingRoute, geocodeBuildings, relocateBuildings, setCampusMap } from './map';
 import { handleRegistrationAlarm, REG_ALARM_PREFIX, syncRegistrationAlarms } from './reminders';
 import { activateLicense, refreshLicense } from './billing';
 import { parseTranscriptText } from '../shared/transcript';
@@ -252,8 +252,12 @@ async function handle(req: ExtRequest, trusted: boolean): Promise<unknown> {
       });
       return null;
     case 'MAP_GEOCODE':
-      // Free for everyone: OpenStreetMap Nominatim, rate-limited + cached.
+      // Google when an owner key is configured, else free OSM (cached).
       return geocodeBuildings(req.buildings);
+    case 'MAP_RELOCATE':
+      // Re-resolve every auto-located building with the current geocoder
+      // (manual fixes survive) — clears stale cached coordinates.
+      return relocateBuildings(req.buildings);
     case 'MAP_ROUTE':
       // Real walking path via the free OSRM demo (cached; no key, no AI).
       return fetchWalkingRoute(req.from, req.to);
