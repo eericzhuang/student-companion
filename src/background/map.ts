@@ -1,10 +1,12 @@
 /**
  * Campus-map building geocoding.
  *
- * All free, no AI: OpenStreetMap's Nominatim geocoder for building
- * coordinates (one request at a time with ≥1.1s spacing per its usage policy,
- * results cached permanently in storage), the OSRM demo server for real
- * walking paths, and manual editing in Options (MAP_SET).
+ * Primary: Google Maps Geocoding (when an owner-configured API key exists) —
+ * markedly better at resolving campus building names. Fallback: the free,
+ * keyless OpenStreetMap Nominatim geocoder (one request at a time with ≥1.1s
+ * spacing per its usage policy). Results cache permanently in storage; the
+ * OSRM demo server draws real walking paths; Options allows manual edits
+ * (MAP_SET). No AI involved in any of it.
  */
 import type { CampusBuilding, CampusMap } from '../shared/types';
 import { getStored, setStored } from '../shared/storage';
@@ -42,6 +44,46 @@ async function nominatimLookup(
   return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
 }
 
+// ---------- Google Maps Geocoding (primary when an owner key is configured) ----------
+
+const GOOGLE_GEOCODE = 'https://maps.googleapis.com/maps/api/geocode/json';
+
+/** Pure URL builder (unit-tested): campus-biased Google geocode request. */
+export function googleGeocodeUrl(
+  query: string,
+  key: string,
+  center?: { lat: number; lng: number },
+): string {
+  let url = `${GOOGLE_GEOCODE}?address=${encodeURIComponent(query)}&key=${encodeURIComponent(key)}`;
+  if (center) {
+    // ~5 km viewport bias around campus — same rationale as the Nominatim
+    // viewbox: "Statler Hall" is ambiguous worldwide, unique on campus.
+    const d = 0.05;
+    url += `&bounds=${center.lat - d},${center.lng - d}|${center.lat + d},${center.lng + d}`;
+  }
+  return url;
+}
+
+async function googleLookup(
+  query: string,
+  key: string,
+  center?: { lat: number; lng: number },
+): Promise<{ lat: number; lng: number } | null> {
+  const res = await fetch(googleGeocodeUrl(query, key, center), {
+    headers: { Accept: 'application/json' },
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as {
+    status: string;
+    results?: Array<{ geometry?: { location?: { lat: number; lng: number } } }>;
+  };
+  if (data.status !== 'OK') return null;
+  const loc = data.results?.[0]?.geometry?.location;
+  return loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lng)
+    ? { lat: loc.lat, lng: loc.lng }
+    : null;
+}
+
 /** Current map, reset if the school changed since it was built. */
 async function currentMap(): Promise<CampusMap> {
   const [map, settings] = await Promise.all([getStored('campusMap'), getStored('settings')]);
@@ -55,13 +97,18 @@ export interface MapLookupResult {
   missing: string[];
 }
 
-/** Free geocoding for every building not already in the map. */
+/** Geocode every building not already in the map — Google when a key is
+ *  configured (owner mode), OpenStreetMap otherwise / as fallback. */
 export async function geocodeBuildings(names: string[]): Promise<MapLookupResult> {
   const map = await currentMap();
+  const googleKey = (await getStored('settings')).googleMapsApiKey?.trim() || null;
   // Resolve the campus center once — building names are only unique nearby.
   if (!map.center && map.school) {
     try {
-      map.center = (await nominatimLookup(map.school)) ?? undefined;
+      map.center =
+        (googleKey ? await googleLookup(map.school, googleKey) : null) ??
+        (await nominatimLookup(map.school)) ??
+        undefined;
     } catch {
       map.center = undefined;
     }
@@ -70,17 +117,25 @@ export async function geocodeBuildings(names: string[]): Promise<MapLookupResult
   for (const name of names) {
     if (map.buildings[name]) continue;
     let hit: { lat: number; lng: number } | null = null;
+    let source: CampusBuilding['source'] = 'osm';
     try {
-      hit = await nominatimLookup(name, map.center);
-      // Workday often abbreviates ("Hollister 110" → building "Hollister");
-      // most campus buildings are "<Name> Hall" in OSM, so retry with that.
-      if (!hit && map.center && !/\b(hall|center|centre|building|library|lab|auditorium)\b/i.test(name)) {
-        hit = await nominatimLookup(`${name} Hall`, map.center);
+      if (googleKey) {
+        // Google resolves campus context best with the school in the query.
+        hit = await googleLookup(map.school ? `${name}, ${map.school}` : name, googleKey, map.center);
+        if (hit) source = 'google';
+      }
+      if (!hit) {
+        hit = await nominatimLookup(name, map.center);
+        // Workday often abbreviates ("Hollister 110" → building "Hollister");
+        // most campus buildings are "<Name> Hall" in OSM, so retry with that.
+        if (!hit && map.center && !/\b(hall|center|centre|building|library|lab|auditorium)\b/i.test(name)) {
+          hit = await nominatimLookup(`${name} Hall`, map.center);
+        }
       }
     } catch {
       hit = null; // offline / blocked — treated as not found
     }
-    if (hit) map.buildings[name] = { ...hit, source: 'osm' };
+    if (hit) map.buildings[name] = { ...hit, source };
     else missing.push(name);
   }
   await setStored('campusMap', map);

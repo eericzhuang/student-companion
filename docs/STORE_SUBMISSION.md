@@ -118,6 +118,11 @@ courses.”
   campus building names on the user's schedule into coordinates for the
   calendar's walking-route view. Only building names and the school name are
   sent, and only when the user clicks ‘Locate buildings’.”
+- `https://maps.googleapis.com/*` — “Optional, more accurate geocoding for
+  the same ‘Locate buildings’ feature via Google's Geocoding API. Used only
+  when a Google Maps API key is configured (developer/owner builds); regular
+  users' lookups fall back to OpenStreetMap. Only building names and the
+  school name are sent.”
 - `https://routing.openstreetmap.de/*` — “Free walking-route lookup: sends
   pairs of building coordinates to draw the walking path between consecutive
   classes in the Route view. Coordinates only; no personal data.”

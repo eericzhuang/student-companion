@@ -43,7 +43,9 @@ export default defineManifest({
     'https://*.myworkday.com/*',
     'https://www.ratemyprofessors.com/*',
     'https://api.anthropic.com/*',
-    // Free building geocoding for campus-map walk-time warnings
+    // Building geocoding for campus-map walk-time warnings: Google when an
+    // owner key is configured, free OSM otherwise
+    'https://maps.googleapis.com/*',
     'https://nominatim.openstreetmap.org/*',
     // Free walking-route paths for the calendar Route view
     'https://routing.openstreetmap.de/*',

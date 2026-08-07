@@ -513,7 +513,7 @@ function RouteMap({
             <span class="wdc-map-located">✓ {allBuildings.length === 1 ? 'building' : `all ${allBuildings.length} buildings`} located</span>
           ) : (
             <button class="wdc-capture-btn wdc-map-btn" disabled={busy} onClick={() => void locate()}>
-              {busy ? 'Locating…' : `📍 Locate ${missing.length} building${missing.length === 1 ? '' : 's'} (free)`}
+              {busy ? 'Locating…' : `📍 Locate ${missing.length} building${missing.length === 1 ? '' : 's'}`}
             </button>
           )}
         </span>
@@ -521,8 +521,9 @@ function RouteMap({
       {note && <div class="wdc-map-note">{note}</div>}
       {!note && missing.length > 0 && (
         <div class="wdc-map-note">
-          <b>Locate</b> looks up each building's coordinates on OpenStreetMap so the walks below get
-          real distances and times. Still needed: {missing.join(', ')}.
+          <b>Locate</b> looks up each building's coordinates (Google Maps when configured,
+          OpenStreetMap otherwise) so the walks below get real distances and times. Still needed:{' '}
+          {missing.join(', ')}.
         </div>
       )}
 

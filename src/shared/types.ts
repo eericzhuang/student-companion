@@ -110,8 +110,8 @@ export interface RmpSchool {
 export interface CampusBuilding {
   lat: number;
   lng: number;
-  /** where the coordinates came from: free OSM geocoding, AI research, or the user */
-  source: 'osm' | 'ai' | 'manual';
+  /** where the coordinates came from: Google geocoding, free OSM geocoding, AI research, or the user */
+  source: 'google' | 'osm' | 'ai' | 'manual';
 }
 
 export interface CampusMap {
@@ -213,6 +213,9 @@ export interface Settings {
   walkSpeedKmh?: number;
   /** color scheme: follow the system (default), or force light/dark */
   appearance?: 'auto' | 'light' | 'dark';
+  /** owner-only: Google Maps Geocoding API key — building lookups use Google
+   *  (more accurate on campuses) instead of the keyless OSM fallback */
+  googleMapsApiKey?: string | null;
 }
 
 export const DEFAULT_SETTINGS: Settings = {

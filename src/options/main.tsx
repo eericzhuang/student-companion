@@ -734,10 +734,23 @@ function CampusMapSection({ settings, patch }: SectionProps) {
       <h2>🗺 Campus map</h2>
       <p class="pl-muted">
         Building coordinates power the calendar's <b>Route</b> view and its "you might miss class"
-        walk-time warnings. The calendar can fill these automatically (free OpenStreetMap lookup, or
-        AI research on Pro) — fix or add any building here.
+        walk-time warnings. The calendar fills these automatically (Google Maps when configured,
+        otherwise a free OpenStreetMap lookup) — fix or add any building here.
         {map.school ? ` Current school: ${map.school}.` : ' Pick your school above first for better lookups.'}
       </p>
+      {settings.admin && (
+        <div class="pl-row" style={{ marginBottom: '10px' }}>
+          <label style={{ flex: '0 0 auto' }}>👑 Google Maps API key</label>
+          <input
+            type="password"
+            placeholder="AIza… (owner only — Geocoding API)"
+            value={settings.googleMapsApiKey ?? ''}
+            onChange={(e) =>
+              void patch({ googleMapsApiKey: (e.target as HTMLInputElement).value.trim() || null })
+            }
+          />
+        </div>
+      )}
       <div class="pl-row" style={{ marginBottom: '10px' }}>
         <label style={{ flex: '0 0 auto' }}>🚶 Walking speed</label>
         <input
@@ -772,7 +785,9 @@ function CampusMapSection({ settings, patch }: SectionProps) {
                 <td>
                   <input type="number" step="0.0001" value={b.lng} onChange={(e) => setCoord(building, 'lng', (e.target as HTMLInputElement).value)} />
                 </td>
-                <td>{b.source === 'osm' ? '🌍 OSM' : b.source === 'ai' ? '🤖 AI' : '✍️ manual'}</td>
+                <td>
+                  {b.source === 'google' ? '📍 Google' : b.source === 'osm' ? '🌍 OSM' : b.source === 'ai' ? '🤖 AI' : '✍️ manual'}
+                </td>
                 <td>
                   <button class="pl-link-inline" title="Remove" onClick={() => remove(building)}>
                     ✕
@@ -979,8 +994,8 @@ function AdminSection({ settings, patch }: SectionProps) {
       <div class="pl-card" style={{ borderColor: '#16a34a' }}>
         <h2>👑 Owner mode</h2>
         <p class="pl-muted">
-          Owner unlock active — Pro features plus owner-only tooling (Claude API key, selector
-          overrides) are visible. Customers see none of this.
+          Owner unlock active — Pro features plus owner-only tooling (Claude API key, Google Maps
+          key, selector overrides) are visible. Customers see none of this.
         </p>
         <button
           class="pl-btn secondary"

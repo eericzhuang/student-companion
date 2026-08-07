@@ -178,10 +178,12 @@ async function handle(req: ExtRequest, trusted: boolean): Promise<unknown> {
       const patch = { ...req.patch };
       if (!trusted) {
         // Content scripts run inside Workday pages; never let that context
-        // change entitlements or the stored license.
+        // change entitlements, the stored license, or API keys.
         delete patch.plan;
         delete patch.admin;
         delete patch.licenseToken;
+        delete patch.claudeApiKey;
+        delete patch.googleMapsApiKey;
       }
       await updateStored('settings', (s) => ({ ...s, ...patch }));
       // Term dates changed → recompute registration reminder alarms.

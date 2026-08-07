@@ -78,14 +78,16 @@ from the extension's own UI.
    permission for **that one site**, fetches that single page without your
    cookies, and extracts its text locally (then sends it to Anthropic only if
    you use AI parsing, per item 2). No other browsing data is touched.
-5. **Campus map lookups** (OpenStreetMap services): when you click “Locate
-   buildings” in the calendar's Route view, the **names of your class
-   buildings** and your school name are sent to `nominatim.openstreetmap.org`
-   to find their coordinates, and those coordinates are sent to
+5. **Campus map lookups**: when you click “Locate buildings” in the
+   calendar's Route view, the **names of your class buildings** and your
+   school name are sent to a geocoding service to find their coordinates —
+   Google's Geocoding API (`maps.googleapis.com`) when a Google Maps key is
+   configured (developer/owner builds), otherwise OpenStreetMap's
+   `nominatim.openstreetmap.org` — and the resulting coordinates are sent to
    `routing.openstreetmap.de` to draw the walking path between classes. Only
    building names and coordinates are sent — never your identity, courses, or
    schedule details — and only when you use the feature. Per OpenStreetMap's
-   usage policy these requests identify the extension (not you) via the
+   usage policy those requests identify the extension (not you) via the
    developer's contact email.
 
 ## What the extension reads on Workday
