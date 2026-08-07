@@ -129,7 +129,9 @@ async function googleLookup(
   if (data.status !== 'OK') return null;
   const top = data.results?.[0];
   const loc = top?.geometry?.location;
-  if (!loc || top.geometry?.location_type === 'APPROXIMATE') return null;
+  // partial_match = Google guessed a similar-but-different place; APPROXIMATE
+  // = an area centroid. Both are the "close but wrong pin" failure — reject.
+  if (!loc || top.partial_match === true || top.geometry?.location_type === 'APPROXIMATE') return null;
   return plausibleOnCampus(loc, center) ? { lat: loc.lat, lng: loc.lng } : null;
 }
 

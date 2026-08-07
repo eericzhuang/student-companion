@@ -13,6 +13,7 @@ import {
   type TranscriptParseResult,
 } from '../background/messages';
 import { isPro, isSupreme } from '../shared/plan';
+import { parseLatLng } from '../shared/coords';
 import { billingEnabled } from '../shared/billing';
 import { extractPdfText } from './pdf';
 
@@ -803,7 +804,16 @@ function CampusMapSection({ settings, patch }: SectionProps) {
           <tbody>
             {entries.map(([building, b]) => (
               <tr>
-                <td>{building}</td>
+                <td>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${b.lat},${b.lng}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Open this stored pin in Google Maps to verify it"
+                  >
+                    {building}
+                  </a>
+                </td>
                 <td>
                   <input type="number" step="0.0001" value={b.lat} onChange={(e) => setCoord(building, 'lat', (e.target as HTMLInputElement).value)} />
                 </td>
@@ -831,6 +841,25 @@ function CampusMapSection({ settings, patch }: SectionProps) {
           Add
         </button>
       </div>
+      <div class="pl-row" style={{ marginTop: '6px' }}>
+        <input
+          placeholder='…or paste from Google Maps: a link or "42.4459, -76.4844" — fills lat/lng above'
+          onInput={(e) => {
+            const el = e.target as HTMLInputElement;
+            const hit = parseLatLng(el.value);
+            if (hit) {
+              setLat(String(hit.lat));
+              setLng(String(hit.lng));
+              el.value = '';
+            }
+          }}
+        />
+      </div>
+      <p class="pl-muted" style={{ marginTop: '6px' }}>
+        To match a pin exactly: search the building on Google Maps, right-click the pin → click the
+        coordinates to copy → paste here, then Add (or overwrite an existing row). Click any
+        building name above to see where its stored pin actually points.
+      </p>
     </div>
   );
 }
