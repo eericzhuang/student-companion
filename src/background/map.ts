@@ -148,50 +148,131 @@ export interface MapLookupResult {
   missing: string[];
 }
 
-/** Geocode every building not already in the map — Google when a key is
- *  configured (owner mode), OpenStreetMap otherwise / as fallback. */
+/** Resolve the campus center once (cached on the map) — building names are
+ *  only unique nearby. */
+async function ensureCenter(map: CampusMap, googleKey: string | null): Promise<void> {
+  if (map.center || !map.school) return;
+  try {
+    map.center =
+      (googleKey ? await googleLookup(map.school, googleKey) : null) ??
+      (await nominatimLookup(map.school)) ??
+      undefined;
+  } catch {
+    map.center = undefined;
+  }
+}
+
+/** One building lookup: Google (when keyed) with OSM fallback. */
+async function lookupBuilding(
+  name: string,
+  map: CampusMap,
+  googleKey: string | null,
+): Promise<{ lat: number; lng: number; source: CampusBuilding['source'] } | null> {
+  try {
+    if (googleKey) {
+      // Google resolves campus context best with the school in the query.
+      const hit = await googleLookup(map.school ? `${name}, ${map.school}` : name, googleKey, map.center);
+      if (hit) return { ...hit, source: 'google' };
+    }
+    let hit = await nominatimLookup(name, map.center);
+    // Workday often abbreviates ("Hollister 110" → building "Hollister");
+    // most campus buildings are "<Name> Hall" in OSM, so retry with that.
+    if (!hit && map.center && !/\b(hall|center|centre|building|library|lab|auditorium)\b/i.test(name)) {
+      hit = await nominatimLookup(`${name} Hall`, map.center);
+    }
+    if (hit && !plausibleOnCampus(hit, map.center)) hit = null;
+    return hit ? { ...hit, source: 'osm' } : null;
+  } catch {
+    return null; // offline / blocked — treated as not found
+  }
+}
+
+/** Geocode every building not already in the map and save immediately —
+ *  used by bulk re-locate; the interactive path goes through previewGeocode. */
 export async function geocodeBuildings(names: string[]): Promise<MapLookupResult> {
   const map = await currentMap();
   const googleKey = (await getStored('settings')).googleMapsApiKey?.trim() || null;
-  // Resolve the campus center once — building names are only unique nearby.
-  if (!map.center && map.school) {
-    try {
-      map.center =
-        (googleKey ? await googleLookup(map.school, googleKey) : null) ??
-        (await nominatimLookup(map.school)) ??
-        undefined;
-    } catch {
-      map.center = undefined;
-    }
-  }
+  await ensureCenter(map, googleKey);
   const missing: string[] = [];
   for (const name of names) {
     if (map.buildings[name]) continue;
-    let hit: { lat: number; lng: number } | null = null;
-    let source: CampusBuilding['source'] = 'osm';
-    try {
-      if (googleKey) {
-        // Google resolves campus context best with the school in the query.
-        hit = await googleLookup(map.school ? `${name}, ${map.school}` : name, googleKey, map.center);
-        if (hit) source = 'google';
-      }
-      if (!hit) {
-        hit = await nominatimLookup(name, map.center);
-        // Workday often abbreviates ("Hollister 110" → building "Hollister");
-        // most campus buildings are "<Name> Hall" in OSM, so retry with that.
-        if (!hit && map.center && !/\b(hall|center|centre|building|library|lab|auditorium)\b/i.test(name)) {
-          hit = await nominatimLookup(`${name} Hall`, map.center);
-        }
-        if (hit && !plausibleOnCampus(hit, map.center)) hit = null;
-      }
-    } catch {
-      hit = null; // offline / blocked — treated as not found
-    }
-    if (hit) map.buildings[name] = { ...hit, source };
+    const hit = await lookupBuilding(name, map, googleKey);
+    if (hit) map.buildings[name] = hit;
     else missing.push(name);
   }
   await setStored('campusMap', map);
   return { map, missing };
+}
+
+// ---------- Confirm-before-save geocoding (the panel's Locate flow) ----------
+
+export interface GeocodeCandidate {
+  name: string;
+  lat: number;
+  lng: number;
+  source: CampusBuilding['source'];
+  /** small confirmation map (Google Static Maps) — only when a key is set */
+  previewUrl?: string;
+}
+
+export interface GeocodePreview {
+  candidates: GeocodeCandidate[];
+  missing: string[];
+}
+
+/** Pure (unit-tested): the little confirmation-map image. */
+export function googleStaticMapUrl(hit: { lat: number; lng: number }, key: string): string {
+  return (
+    'https://maps.googleapis.com/maps/api/staticmap' +
+    `?center=${hit.lat},${hit.lng}&zoom=17&size=240x140&scale=2` +
+    `&markers=color:red%7C${hit.lat},${hit.lng}&key=${encodeURIComponent(key)}`
+  );
+}
+
+/** Look buildings up but DON'T save — the user confirms each pin first. */
+export async function previewGeocode(names: string[]): Promise<GeocodePreview> {
+  const map = await currentMap();
+  const googleKey = (await getStored('settings')).googleMapsApiKey?.trim() || null;
+  await ensureCenter(map, googleKey);
+  // Persist the (possibly fresh) center without touching buildings.
+  await setStored('campusMap', map);
+  const candidates: GeocodeCandidate[] = [];
+  const missing: string[] = [];
+  for (const name of names) {
+    if (map.buildings[name]) continue;
+    const hit = await lookupBuilding(name, map, googleKey);
+    if (hit) {
+      candidates.push({
+        name,
+        ...hit,
+        ...(googleKey ? { previewUrl: googleStaticMapUrl(hit, googleKey) } : {}),
+      });
+    } else {
+      missing.push(name);
+    }
+  }
+  return { candidates, missing };
+}
+
+/** Save the pins the user accepted in the confirmation window. */
+export async function confirmBuildings(
+  entries: Array<{ name: string; lat: number; lng: number; source: CampusBuilding['source'] }>,
+): Promise<CampusMap> {
+  const map = await currentMap();
+  const SOURCES: Array<CampusBuilding['source']> = ['google', 'osm', 'ai', 'manual'];
+  for (const e of entries) {
+    if (
+      e.name.trim() &&
+      Number.isFinite(e.lat) &&
+      Number.isFinite(e.lng) &&
+      Math.abs(e.lat) <= 90 &&
+      Math.abs(e.lng) <= 180
+    ) {
+      map.buildings[e.name] = { lat: e.lat, lng: e.lng, source: SOURCES.includes(e.source) ? e.source : 'manual' };
+    }
+  }
+  await setStored('campusMap', map);
+  return map;
 }
 
 /**

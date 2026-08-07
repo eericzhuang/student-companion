@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { googleFindPlaceUrl, googleGeocodeUrl, plausibleOnCampus } from '../src/background/map';
+import {
+  googleFindPlaceUrl,
+  googleGeocodeUrl,
+  googleStaticMapUrl,
+  plausibleOnCampus,
+} from '../src/background/map';
 
 describe('googleGeocodeUrl', () => {
   it('builds a keyed address query', () => {
@@ -36,6 +41,17 @@ describe('googleFindPlaceUrl', () => {
   it('biases to a 5 km circle around campus', () => {
     const url = googleFindPlaceUrl('Statler Hall', 'k', { lat: 42.45, lng: -76.48 });
     expect(url).toContain('locationbias=circle%3A5000%4042.45%2C-76.48');
+  });
+});
+
+describe('googleStaticMapUrl', () => {
+  it('builds a marker-centered confirmation thumbnail', () => {
+    const url = googleStaticMapUrl({ lat: 42.45, lng: -76.48 }, 'AIza-test');
+    expect(url).toContain('/maps/api/staticmap?');
+    expect(url).toContain('center=42.45,-76.48');
+    expect(url).toContain('markers=color:red%7C42.45,-76.48');
+    expect(url).toContain('zoom=17');
+    expect(url).toContain('key=AIza-test');
   });
 });
 

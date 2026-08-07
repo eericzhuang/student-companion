@@ -984,6 +984,45 @@
 .wdc-map-note { margin: 8px 2px 0; font-size: 11.5px; color: #475569; line-height: 1.45; }
 .wdc-map-located { font-size: 11.5px; color: #16a34a; font-weight: 600; white-space: nowrap; }
 
+/* confirm-before-save pins */
+.wdc-map-confirm {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+}
+.wdc-map-confirm-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+.wdc-map-cand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-top: 1px solid #dbeafe;
+}
+.wdc-map-thumb {
+  width: 120px;
+  height: 70px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  display: block;
+}
+.wdc-map-cand-info { flex: 1; min-width: 0; font-size: 12px; }
+.wdc-map-cand-info b { display: block; }
+.wdc-map-cand-coords { font-size: 11px; color: #475569; }
+.wdc-map-cand-btns { display: flex; gap: 2px; flex: 0 0 auto; }
+.wdc-dark .wdc-map-confirm { background: #16233f; border-color: #1e3a5f; }
+.wdc-dark .wdc-map-cand { border-top-color: #1e3a5f; }
+.wdc-dark .wdc-map-cand-coords { color: #94a3b8; }
+
 /* Inline .ics export date form */
 .wdc-ics-form {
   display: flex;

@@ -4,6 +4,7 @@
  */
 import type {
   AcademicHistory,
+  CampusBuilding,
   CampusMap,
   DegreeProgram,
   PanelState,
@@ -48,6 +49,8 @@ export type ExtRequest =
   | { kind: 'REQ_OVERRIDE_SET'; key: string; value: ReqOverrideValue | null }
   // --- campus map (walk-time warnings) ---
   | { kind: 'MAP_GEOCODE'; buildings: string[] }
+  | { kind: 'MAP_GEOCODE_PREVIEW'; buildings: string[] }
+  | { kind: 'MAP_CONFIRM'; entries: Array<{ name: string; lat: number; lng: number; source: CampusBuilding['source'] }> }
   | { kind: 'MAP_RELOCATE'; buildings: string[] }
   | { kind: 'MAP_ROUTE'; from: { lat: number; lng: number }; to: { lat: number; lng: number } }
   | { kind: 'MAP_SET'; map: CampusMap }

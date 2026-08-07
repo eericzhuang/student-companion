@@ -65,6 +65,31 @@ const chromeStub = {
           write('campusMap', map);
           return { ok: true, data: { map, missing } };
         }
+        case 'MAP_GEOCODE_PREVIEW': {
+          const cur = (store.campusMap as { buildings: Record<string, unknown> }) ?? { buildings: {} };
+          const candidates: unknown[] = [];
+          const missing: string[] = [];
+          for (const name of req.buildings as string[]) {
+            if (cur.buildings?.[name]) continue;
+            const hit = mockBuildingCoords[name];
+            if (hit) candidates.push({ name, ...hit, source: 'google' });
+            else missing.push(name);
+          }
+          return { ok: true, data: { candidates, missing } };
+        }
+        case 'MAP_CONFIRM': {
+          const cur = (store.campusMap as { school: string | null; buildings: Record<string, unknown> }) ?? {
+            school: 'Cornell University',
+            buildings: {},
+          };
+          const buildings = { ...cur.buildings };
+          for (const e of req.entries as Array<{ name: string; lat: number; lng: number; source: string }>) {
+            buildings[e.name] = { lat: e.lat, lng: e.lng, source: e.source };
+          }
+          const map = { school: cur.school ?? 'Cornell University', buildings };
+          write('campusMap', map);
+          return { ok: true, data: { map } };
+        }
         case 'MAP_SET':
           write('campusMap', req.map);
           return { ok: true };

@@ -16,7 +16,14 @@ import {
   testAiConnection,
 } from './claude/client';
 import { heuristicParseDegree } from './degreeHeuristic';
-import { fetchWalkingRoute, geocodeBuildings, relocateBuildings, setCampusMap } from './map';
+import {
+  confirmBuildings,
+  fetchWalkingRoute,
+  geocodeBuildings,
+  previewGeocode,
+  relocateBuildings,
+  setCampusMap,
+} from './map';
 import { handleRegistrationAlarm, REG_ALARM_PREFIX, syncRegistrationAlarms } from './reminders';
 import { activateLicense, refreshLicense } from './billing';
 import { parseTranscriptText } from '../shared/transcript';
@@ -254,6 +261,12 @@ async function handle(req: ExtRequest, trusted: boolean): Promise<unknown> {
     case 'MAP_GEOCODE':
       // Google when an owner key is configured, else free OSM (cached).
       return geocodeBuildings(req.buildings);
+    case 'MAP_GEOCODE_PREVIEW':
+      // Look up but don't save — the panel shows each pin for confirmation.
+      return previewGeocode(req.buildings);
+    case 'MAP_CONFIRM':
+      // Persist only the pins the user accepted.
+      return { map: await confirmBuildings(req.entries) };
     case 'MAP_RELOCATE':
       // Re-resolve every auto-located building with the current geocoder
       // (manual fixes survive) — clears stale cached coordinates.

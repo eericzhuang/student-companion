@@ -23,7 +23,8 @@ import type {
 } from '../../shared/types';
 import { scenarioMetrics } from '../../shared/scenario';
 import { getStored, onStoredChange } from '../../shared/storage';
-import { sendToBackground, type MapLookupResult, type RmpLookupResult } from '../../background/messages';
+import { sendToBackground, type RmpLookupResult } from '../../background/messages';
+import type { GeocodeCandidate, GeocodePreview } from '../../background/map';
 import { computeFreeSlots, dayMaskToLabels, formatMinutes } from '../../shared/time';
 import {
   buildingOf,
@@ -445,21 +446,44 @@ function RouteMap({
   );
   const missing = allBuildings.filter((b) => !buildings[b]);
 
+  // Located-but-unconfirmed pins: the user checks each little map before
+  // anything is saved (geocoders are sometimes confidently wrong).
+  const [pending, setPending] = useState<GeocodeCandidate[]>([]);
+
   const locate = async () => {
     setBusy(true);
     setNote(null);
     try {
-      const res = await sendToBackground<MapLookupResult>({ kind: 'MAP_GEOCODE', buildings: allBuildings });
-      setNote(
-        res.missing.length === 0
-          ? 'All buildings located ✓'
-          : `Couldn't locate: ${res.missing.join(', ')} — add their coordinates in ⚙ Options → Campus map.`,
-      );
+      const res = await sendToBackground<GeocodePreview>({
+        kind: 'MAP_GEOCODE_PREVIEW',
+        buildings: allBuildings,
+      });
+      setPending(res.candidates);
+      if (res.candidates.length === 0) {
+        setNote(
+          res.missing.length === 0
+            ? 'All buildings located ✓'
+            : `Couldn't locate: ${res.missing.join(', ')} — add their coordinates in ⚙ Options → Campus map.`,
+        );
+      }
     } catch (err) {
       setNote(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
+  };
+
+  const accept = async (list: GeocodeCandidate[]) => {
+    if (list.length === 0) return;
+    await sendToBackground({
+      kind: 'MAP_CONFIRM',
+      entries: list.map(({ name, lat, lng, source }) => ({ name, lat, lng, source })),
+    });
+    setPending((cur) => cur.filter((c) => !list.some((a) => a.name === c.name)));
+  };
+  const dismiss = (c: GeocodeCandidate) => {
+    setPending((cur) => cur.filter((x) => x.name !== c.name));
+    setNote(`Skipped ${c.name} — set it manually in ⚙ Options → Campus map (paste from Google Maps).`);
   };
 
   // The selected day's classes in order; legs between them come from the
@@ -518,12 +542,67 @@ function RouteMap({
           )}
         </span>
       </div>
+      {pending.length > 0 && (
+        <div class="wdc-map-confirm">
+          <div class="wdc-map-confirm-head">
+            <b>📍 Confirm each pin before it's saved</b>
+            <span>
+              <button class="wdc-capture-btn wdc-map-btn" onClick={() => void accept(pending)}>
+                ✓ use all {pending.length}
+              </button>{' '}
+              <button class="wdc-capture-btn wdc-map-btn" onClick={() => setPending([])}>
+                ✕ cancel
+              </button>
+            </span>
+          </div>
+          {pending.map((c) => (
+            <div class="wdc-map-cand" key={c.name}>
+              {c.previewUrl && (
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Open in Google Maps"
+                >
+                  <img
+                    class="wdc-map-thumb"
+                    src={c.previewUrl}
+                    alt=""
+                    onError={(e) => ((e.target as HTMLElement).style.display = 'none')}
+                  />
+                </a>
+              )}
+              <div class="wdc-map-cand-info">
+                <b>{c.name}</b>
+                <span class="wdc-map-cand-coords">
+                  {c.lat.toFixed(5)}, {c.lng.toFixed(5)} ·{' '}
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    check on Google Maps ↗
+                  </a>
+                </span>
+              </div>
+              <span class="wdc-map-cand-btns">
+                <button class="wdc-capture-btn wdc-map-btn" title="Save this pin" onClick={() => void accept([c])}>
+                  ✓
+                </button>
+                <button class="wdc-capture-btn wdc-map-btn" title="Wrong — skip it" onClick={() => dismiss(c)}>
+                  ✕
+                </button>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
       {note && <div class="wdc-map-note">{note}</div>}
-      {!note && missing.length > 0 && (
+      {!note && pending.length === 0 && missing.length > 0 && (
         <div class="wdc-map-note">
           <b>Locate</b> looks up each building's coordinates (Google Maps when configured,
-          OpenStreetMap otherwise) so the walks below get real distances and times. Still needed:{' '}
-          {missing.join(', ')}.
+          OpenStreetMap otherwise), then shows every pin on a small map for you to confirm before
+          it's used. Still needed: {missing.join(', ')}.
         </div>
       )}
 
