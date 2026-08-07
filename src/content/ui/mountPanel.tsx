@@ -10,6 +10,7 @@ import { CaptureWidget } from './CaptureWidget';
 import { RmpAllPanel } from './RmpAllPanel';
 import cssText from './styles.css?inline';
 import { themeRoot } from './theme';
+import { isolate } from './isolate';
 
 const HOST_ID = 'wdc-panel-host';
 const CAPTURE_HOST_ID = 'wdc-capture-host';
@@ -17,16 +18,6 @@ const RMP_HOST_ID = 'wdc-rmp-panel-host';
 let host: HTMLElement | null = null;
 let captureHost: HTMLElement | null = null;
 let rmpHost: HTMLElement | null = null;
-
-// Events that Workday's "click outside to close" logic listens for. We stop
-// them at our host so they never reach Workday's document-level listeners.
-const ISOLATED_EVENTS = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click', 'touchstart'];
-
-function isolate(hostEl: HTMLElement): void {
-  for (const type of ISOLATED_EVENTS) {
-    hostEl.addEventListener(type, (e) => e.stopPropagation());
-  }
-}
 
 /** Create an isolated shadow host and render `node` into it. */
 function makeHost(id: string, node: ComponentChild): HTMLElement {

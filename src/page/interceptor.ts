@@ -7,6 +7,12 @@
  * same-origin Workday responses that parse as JSON are forwarded.
  */
 
+import { installEventShield } from './eventShield';
+
+// Must run before any Workday script registers listeners: page-level popup
+// dismissal listeners are wrapped to ignore events from our floating UI.
+installEventShield();
+
 const SOURCE_TAG = 'wd-companion-intercept';
 const MAX_BODY_BYTES = 4_000_000; // skip giant payloads (file downloads etc.)
 

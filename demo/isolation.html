@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Isolation harness — internal test page</title>
+    <style>
+      body { font-family: system-ui; margin: 24px; }
+      .popup {
+        display: inline-block; margin: 8px; padding: 14px 18px; border: 2px solid #0f4c81;
+        border-radius: 8px; background: #eff6ff;
+      }
+      .popup.closed { display: none; }
+      #log { margin-top: 12px; font: 12px monospace; white-space: pre-wrap; color: #334155; }
+    </style>
+  </head>
+  <body>
+    <h1>Popup isolation harness</h1>
+    <p>
+      Four fake "Workday popups", each using a different real-world dismissal strategy.
+      The extension's shadow host + event shield must keep all four open when the panel
+      is clicked, while genuine outside clicks still close them.
+    </p>
+    <div>
+      <div class="popup" id="popup-bubble" tabindex="-1">A · document bubble mousedown</div>
+      <div class="popup" id="popup-capture" tabindex="-1">B · document CAPTURE mousedown</div>
+      <div class="popup" id="popup-window" tabindex="-1">C · window capture pointerdown</div>
+      <div class="popup" id="popup-focus" tabindex="0">D · closes on focusout</div>
+    </div>
+    <button id="reopen">Reopen all</button>
+    <div id="log"></div>
+    <script type="module" src="./isolation-test.ts"></script>
+  </body>
+</html>
