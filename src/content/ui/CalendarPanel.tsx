@@ -35,7 +35,7 @@ import {
 } from '../../shared/route';
 import { ratingClass, rmpProfessorUrl } from '../../shared/rmpUrl';
 import { cleanInstructorName, displayInstructorName } from '../../shared/fuzzy';
-import { cleanSectionTitle } from '../../shared/schedule';
+import { cleanSectionTitle, courseLabel, courseTitle } from '../../shared/schedule';
 import { addFinal, addManualSection, removeFinal, removeSection, renameSection, updateSectionDetails } from './scheduleEdit';
 import { finalConflictIds, formatFinalDate, sortFinals, timeInputToMinutes } from '../../shared/finals';
 import { buildShareFile, parseShareFile, sharedCourses } from '../../shared/friendShare';
@@ -329,7 +329,7 @@ export function CalendarPanel() {
             ratings={ratings}
             onEventClick={(section, meeting) => setSelEvent({ section, meeting })}
           />
-          {(schedule?.finals?.length ?? 0) > 0 && <FinalsStrip finals={schedule!.finals!} />}
+          {(schedule?.finals?.length ?? 0) > 0 && <FinalsStrip finals={schedule!.finals!} sections={sections} />}
         </>
       ) : view === 'free' ? (
         <FreeTimeList sections={sections} />
@@ -654,6 +654,9 @@ function RouteMap({
                 <span class="wdc-itin-num">{i + 1}</span>
                 <span class="wdc-itin-time">{formatMinutes(m.startMin)}</span>
                 <b>{s.courseCode}</b>
+                {courseTitle(s.courseCode, s.title) && (
+                  <span class="wdc-itin-title">{courseTitle(s.courseCode, s.title)}</span>
+                )}
                 <span class="wdc-itin-bld">
                   {m.location ? buildingOf(m.location) : <i>no location</i>}
                   {m.location && !buildings[buildingOf(m.location)] && ' ❓'}
@@ -795,6 +798,9 @@ function ScheduleEditList({ sections, finals }: { sections: Section[]; finals: F
                 ✕
               </button>
             </div>
+            {courseTitle(s.courseCode, s.title) && (
+              <div class="wdc-edit-titletext">{courseTitle(s.courseCode, s.title)}</div>
+            )}
             <div class="wdc-edit-row wdc-edit-details">
               <input
                 placeholder="👤 Professor"
@@ -854,6 +860,12 @@ function ScheduleEditList({ sections, finals }: { sections: Section[]; finals: F
  * Final exams: date-specific sittings with their own clash detection —
  * finals rarely follow the weekly pattern, so they're entered separately.
  */
+/** Full course name for a final-exam entry, looked up from the captured schedule. */
+function finalTitle(sections: Section[], code: string): string {
+  const match = sections.find((s) => s.courseCode === code);
+  return match ? courseTitle(match.courseCode, match.title) : '';
+}
+
 function FinalsEditor({ sections, finals }: { sections: Section[]; finals: FinalExam[] }) {
   const [code, setCode] = useState('');
   const [date, setDate] = useState('');
@@ -892,6 +904,7 @@ function FinalsEditor({ sections, finals }: { sections: Section[]; finals: Final
             {formatFinalDate(f.date)} · {formatMinutes(f.startMin)}–{formatMinutes(f.endMin)}
           </span>
           <b>{f.code}</b>
+          {finalTitle(sections, f.code) && <span class="wdc-itin-title">{finalTitle(sections, f.code)}</span>}
           <span class="wdc-finals-loc">{f.location ?? ''}</span>
           {conflicts.has(f.id) && (
             <span title="Overlaps another final on the same day">⚠</span>
@@ -914,7 +927,7 @@ function FinalsEditor({ sections, finals }: { sections: Section[]; finals: Final
         />
         <datalist id="wdc-finals-codes">
           {sections.map((s) => (
-            <option value={s.courseCode} />
+            <option value={s.courseCode}>{courseLabel(s.courseCode, s.title)}</option>
           ))}
         </datalist>
         <input type="date" value={date} onInput={(e) => setDate((e.target as HTMLInputElement).value)} />
@@ -937,15 +950,16 @@ function FinalsEditor({ sections, finals }: { sections: Section[]; finals: Final
 }
 
 /** Compact chronological finals list under the week grid (grid view). */
-function FinalsStrip({ finals }: { finals: FinalExam[] }) {
+function FinalsStrip({ finals, sections }: { finals: FinalExam[]; sections: Section[] }) {
   const conflicts = finalConflictIds(finals);
   return (
     <div class="wdc-finals-strip">
       <b>🎓 Finals:</b>{' '}
       {sortFinals(finals).map((f, i) => (
-        <span class={conflicts.has(f.id) ? 'wdc-finals-clash' : ''}>
+        <span class={conflicts.has(f.id) ? 'wdc-finals-clash' : ''} title={finalTitle(sections, f.code) || undefined}>
           {i > 0 && ' · '}
-          {formatFinalDate(f.date)} {formatMinutes(f.startMin)} {f.code}
+          {formatFinalDate(f.date)} {formatMinutes(f.startMin)}{' '}
+          {finalTitle(sections, f.code) ? courseLabel(f.code, finalTitle(sections, f.code)) : f.code}
           {conflicts.has(f.id) && ' ⚠'}
         </span>
       ))}
@@ -1212,7 +1226,12 @@ function FriendCompare({ schedule }: { schedule: ScheduleSnapshot | null }) {
             </button>
           </div>
           <div>
-            🤝 Same classes: {overlap.length > 0 ? overlap.join(', ') : <i>none</i>}
+            🤝 Same classes:{' '}
+            {overlap.length > 0
+              ? overlap
+                  .map((code) => courseLabel(code, mine.find((s) => s.courseCode === code)?.title))
+                  .join(', ')
+              : <i>none</i>}
           </div>
           <CompareGrid mine={mine} friend={friend.sections} friendName={friend.name} />
           <div class="wdc-map-note wdc-map-fine">

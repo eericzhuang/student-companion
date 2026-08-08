@@ -7,6 +7,7 @@
 import { useMemo } from 'preact/hooks';
 import { DAYS, type DayMask, type Section } from '../../shared/types';
 import { formatMinutes } from '../../shared/time';
+import { courseLabel } from '../../shared/schedule';
 
 const DAY_ORDER: Array<{ mask: DayMask; label: string }> = [
   { mask: DAYS.MON, label: 'Mon' },
@@ -90,9 +91,9 @@ export function CompareGrid({
           <div
             class={`wdc-cmp-block wdc-cmp-${side}`}
             style={{ top: `${top(m.startMin)}px`, height: `${Math.max((m.endMin - m.startMin) * PX_PER_MIN, 13)}px` }}
-            title={`${side === 'mine' ? 'You' : friendName}: ${s.courseCode} ${formatMinutes(m.startMin)}–${formatMinutes(m.endMin)}`}
+            title={`${side === 'mine' ? 'You' : friendName}: ${courseLabel(s.courseCode, s.title)} ${formatMinutes(m.startMin)}–${formatMinutes(m.endMin)}`}
           >
-            {s.courseCode}
+            {courseLabel(s.courseCode, s.title)}
           </div>
         )),
     );

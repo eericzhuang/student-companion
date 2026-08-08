@@ -2,6 +2,15 @@
 
 All notable user-facing changes to the extension.
 
+## Unreleased
+
+- **Full course names everywhere**: every course display now shows the full
+  title next to the code (e.g. "CS 2110 · Object-Oriented Programming & Data
+  Structures") — calendar blocks, route itinerary, edit list, finals, capture
+  chips and history, friend compare, image export, planner progress chips,
+  GPA what-if rows, what-if suggestions, semester-board elective picks, AI
+  history, and prereq-graph tooltips.
+
 ## 0.1.0 — 2026-07-15 (first public release)
 
 ### Free

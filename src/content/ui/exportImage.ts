@@ -6,6 +6,7 @@
  */
 import { DAYS, type Section } from '../../shared/types';
 import { formatMinutes } from '../../shared/time';
+import { courseTitle } from '../../shared/schedule';
 import { displayInstructorName } from '../../shared/fuzzy';
 import { ratingClass } from '../../shared/rmpUrl';
 import { PALETTE } from './WeekGrid';
@@ -147,6 +148,10 @@ export function exportScheduleImage(opts: {
           ty += 14;
         };
         line(s.courseCode, `bold 12px ${FONT}`, '#ffffff');
+        {
+          const t = courseTitle(s.courseCode, s.title);
+          if (t) line(t, `10px ${FONT}`, 'rgba(255,255,255,0.95)');
+        }
         line(`${formatMinutes(m.startMin)}–${formatMinutes(m.endMin)}`, `10px ${FONT}`, 'rgba(255,255,255,0.92)');
         if (m.location) line(`📍 ${m.location}`, `10px ${FONT}`, 'rgba(255,255,255,0.92)');
         if (s.instructor) {

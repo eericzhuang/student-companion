@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { AcademicHistory, HistoryCourse, ScheduleSnapshot, Settings } from '../../shared/types';
 import { getStored, onStoredChange } from '../../shared/storage';
 import { sendToBackground } from '../../background/messages';
-import { mergeSections } from '../../shared/schedule';
+import { courseLabel, courseTitle, mergeSections } from '../../shared/schedule';
 import { addManualSection } from './scheduleEdit';
 import { scrapeSavedSchedule } from '../scrapers/savedSchedule';
 import { scrapeAcademicHistory } from '../scrapers/academicHistory';
@@ -254,7 +254,7 @@ export function CaptureWidget() {
           <div class="wdc-capture-chips">
             {scheduleSections.map((s) => (
               <span class="wdc-capture-chip" title={s.title}>
-                {s.courseCode}
+                {courseLabel(s.courseCode, s.title)}
               </span>
             ))}
           </div>
@@ -343,6 +343,9 @@ export function CaptureWidget() {
               {history.courses.map((c) => (
                 <div class="wdc-capture-history-row">
                   <b>{c.code}</b>
+                  {courseTitle(c.code, c.title) && (
+                    <span class="wdc-hist-title">{courseTitle(c.code, c.title)}</span>
+                  )}
                   <span>
                     {c.grade ? c.grade : c.status === 'in-progress' ? 'in progress' : '—'}
                     {c.term ? ` · ${c.term}` : ''}

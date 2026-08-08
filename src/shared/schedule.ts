@@ -25,3 +25,19 @@ export function cleanSectionTitle(courseCode: string, title: string): string {
   s = s.trim().replace(/[-–·:,\s]+$/, '');
   return s || title.trim();
 }
+
+/**
+ * The full course name to show next to a code, or '' when none is known
+ * (missing title, or the title is just the code again).
+ */
+export function courseTitle(code: string, title?: string | null): string {
+  if (!title) return '';
+  const t = cleanSectionTitle(code, title);
+  return t.toLowerCase() === code.trim().toLowerCase() ? '' : t;
+}
+
+/** "CSE 4107 · Introduction to Machine Learning", or just the code when no title is known. */
+export function courseLabel(code: string, title?: string | null): string {
+  const t = courseTitle(code, title);
+  return t ? `${code} · ${t}` : code;
+}

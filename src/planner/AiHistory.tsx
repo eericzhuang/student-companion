@@ -8,6 +8,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { AiFeature, AiHistoryEntry, DegreeProgram, RequirementGroup } from '../shared/types';
 import { getStored, onStoredChange } from '../shared/storage';
 import { sendToBackground } from '../background/messages';
+import { courseLabel } from '../shared/schedule';
 
 function ruleLabel(g: RequirementGroup): string {
   if (g.rule.kind === 'chooseN') return `choose ${g.rule.n ?? 1}`;
@@ -34,7 +35,7 @@ function DegreeRequirements({ degree }: { degree: DegreeProgram }) {
             ) : (
               g.courses.map((c) => (
                 <span class="pl-chip none" title={c.title ?? c.code}>
-                  {c.code}
+                  {courseLabel(c.code, c.title)}
                 </span>
               ))
             )}

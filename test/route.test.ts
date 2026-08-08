@@ -112,6 +112,22 @@ describe('scrape cleanup (real Workday tenant junk)', () => {
     );
   });
 
+  it('courseLabel/courseTitle append the full name only when one is known', async () => {
+    const { courseLabel, courseTitle } = await import('../src/shared/schedule');
+    expect(courseLabel('CSE 4107', 'Introduction to Machine Learning')).toBe(
+      'CSE 4107 · Introduction to Machine Learning',
+    );
+    expect(courseLabel('CSE 4107', 'CSE 4107 - Introduction to Machine Learning')).toBe(
+      'CSE 4107 · Introduction to Machine Learning',
+    );
+    // no title, empty title, or a title that is just the code again -> code only
+    expect(courseLabel('CSE 4107', null)).toBe('CSE 4107');
+    expect(courseLabel('CSE 4107', '')).toBe('CSE 4107');
+    expect(courseLabel('CSE 4107', 'cse 4107')).toBe('CSE 4107');
+    expect(courseTitle('CSE 4107', 'CSE 4107')).toBe('');
+    expect(courseTitle('CS 2110', 'CS 2110 - OOP3Quality Graded Credit')).toBe('OOP');
+  });
+
   it('transitions carry straight-line distance', () => {
     const t = dayTransitions(
       [section('A', 600, 650, 'Baker Hall 200'), section('B', 660, 710, 'Far Hall 101')],

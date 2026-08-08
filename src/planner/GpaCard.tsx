@@ -11,6 +11,8 @@ import { GRADE_CHOICES, computeGpa, projectGpa, type Hypothetical } from './engi
 export interface GpaCandidate {
   code: string;
   credits: number;
+  /** full course name, when any capture source knows it */
+  title?: string;
 }
 
 export function GpaCard({ history, candidates }: { history: HistoryCourse[]; candidates: GpaCandidate[] }) {
@@ -67,7 +69,10 @@ export function GpaCard({ history, candidates }: { history: HistoryCourse[]; can
           </div>
           {candidates.map((c) => (
             <div class="pl-gpa-row">
-              <span class="pl-gpa-code">{c.code}</span>
+              <span class="pl-gpa-code">
+                {c.code}
+                {c.title && <span class="pl-gpa-title"> · {c.title}</span>}
+              </span>
               <input
                 type="number"
                 min={0}

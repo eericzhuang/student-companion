@@ -9,6 +9,7 @@ import { evaluateDegree, normalizeCode, scopeReqOverrides, type CourseStates } f
 import { findOverlaps } from './engine/overlap';
 import { buildSchedulingPlan } from './engine/plan';
 import { suggestSchedule } from './engine/scheduleSuggest';
+import { courseLabel } from '../shared/schedule';
 
 interface Props {
   degrees: StoredDegree[];
@@ -222,7 +223,7 @@ export function PlannerBoard({ degrees, states, terms, plannerState, prereqOverr
 
       {suggestion.unplaced.length > 0 && (
         <div class="pl-error">
-          Doesn't fit in your configured terms: {suggestion.unplaced.map((c) => c.code).join(', ')}
+          Doesn't fit in your configured terms: {suggestion.unplaced.map((c) => courseLabel(c.code, c.title)).join(', ')}
           {suggestion.cyclic.length > 0 &&
             ` (check prerequisites of ${suggestion.cyclic.join(', ')} — they may be circular)`}
           . Add more terms in options or raise credit caps.
@@ -252,7 +253,7 @@ export function PlannerBoard({ degrees, states, terms, plannerState, prereqOverr
                   const rc = plan.requirementCount.get(normalizeCode(c.code)) ?? 1;
                   return (
                     <span class="pl-chip planned" title="auto-picked to satisfy this group">
-                      {rc > 1 ? '⭐ ' : ''}✓ {c.code}
+                      {rc > 1 ? '⭐ ' : ''}✓ {courseLabel(c.code, c.title)}
                     </span>
                   );
                 })}
@@ -270,7 +271,7 @@ export function PlannerBoard({ degrees, states, terms, plannerState, prereqOverr
                         title={rc > 1 ? `Recommended — satisfies ${rc} requirements` : 'other option you could choose instead'}
                       >
                         {rc > 1 ? '⭐ ' : ''}
-                        {c.code}
+                        {courseLabel(c.code, c.title)}
                       </span>
                     );
                   })}

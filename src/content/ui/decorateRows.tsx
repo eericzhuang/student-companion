@@ -7,7 +7,7 @@
 import { getStored } from '../../shared/storage';
 import { sendToBackground, type RmpLookupResult } from '../../background/messages';
 import { findConflicts } from '../../shared/time';
-import { mergeSections } from '../../shared/schedule';
+import { courseLabel, mergeSections } from '../../shared/schedule';
 import type { Section, Settings } from '../../shared/types';
 import type { ResultRow } from '../scrapers/findCourseSections';
 import { scrapeResultRows } from '../scrapers/findCourseSections';
@@ -59,7 +59,7 @@ async function applyConflictBadge(row: ResultRow, scheduleSections: Section[]): 
   badge.setAttribute(CONFLICT_ATTR, '1');
   badge.className = 'wdc-conflict-badge';
   badge.textContent = `⛔ conflicts: ${conflicts.map((c) => c.courseCode).join(', ')}`;
-  badge.title = 'Overlaps your saved schedule';
+  badge.title = `Overlaps your saved schedule: ${conflicts.map((c) => courseLabel(c.courseCode, c.title)).join(', ')}`;
   anchorFor(row).appendChild(badge);
 }
 
@@ -141,7 +141,7 @@ function applyAddButton(row: ResultRow, scheduleSections: Section[]): void {
     }).catch(() => {});
     btn.textContent = '✓ on calendar';
     btn.classList.add('added');
-    showCaptureToast(`✓ Added ${row.courseCode ?? row.sectionId} to your calendar.`);
+    showCaptureToast(`✓ Added ${courseLabel(row.courseCode ?? row.sectionId, row.title)} to your calendar.`);
   });
   anchorFor(row).appendChild(btn);
 }

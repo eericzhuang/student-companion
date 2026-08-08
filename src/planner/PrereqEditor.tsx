@@ -12,6 +12,7 @@ import { getStored } from '../shared/storage';
 import { aiAvailable, isSupreme } from '../shared/plan';
 import { aiLaneFullMessage, aiLaneOpen, enterAiLane, leaveAiLane } from './aiLock';
 import { normalizeCode, type CourseStates } from './engine/requirements';
+import { buildCourseTitleMap } from './engine/titles';
 import { PrereqGraph } from './PrereqGraph';
 
 // Module-level so an in-flight "Auto-find prerequisites" search keeps its state
@@ -153,6 +154,8 @@ export function PrereqEditor({ degrees, prereqOverrides, courseEquivalents, stat
     return merged;
   }, [parsedPrereqs, prereqOverrides]);
 
+  const courseTitles = useMemo(() => buildCourseTitleMap(degrees), [degrees]);
+
   return (
     <div class="pl-card">
       <h2>Prerequisites</h2>
@@ -162,7 +165,7 @@ export function PrereqEditor({ degrees, prereqOverrides, courseEquivalents, stat
         was parsed.
       </p>
 
-      <PrereqGraph prereqs={mergedPrereqs} states={states} />
+      <PrereqGraph prereqs={mergedPrereqs} states={states} titles={courseTitles} />
 
       {aiOn && !supremeOn && (
         <div class="pl-ai-card">

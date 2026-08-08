@@ -10,6 +10,7 @@ import { sendToBackground } from '../background/messages';
 import { normalizeCode, stateOf, type CourseStates } from './engine/requirements';
 import { evaluateWhatIf } from './engine/whatIf';
 import { requirementAppearances } from './engine/overlap';
+import { buildCourseTitleMap, titleFor } from './engine/titles';
 
 interface Props {
   degrees: StoredDegree[];
@@ -64,6 +65,12 @@ export function WhatIf({ degrees, states, terms, plannerState, courseEquivalents
     [degrees, states, tryCodes, courseEquivalents, reqOverrides],
   );
 
+  const titles = useMemo(() => buildCourseTitleMap(degrees), [degrees]);
+  const labelOf = (code: string) => {
+    const t = titleFor(titles, code);
+    return t ? `${code} · ${t}` : code;
+  };
+
   // Quick-add suggestions: untaken courses that appear in the most requirement
   // groups (the classic "take these first" double-counters).
   const suggestions = useMemo(() => {
@@ -111,7 +118,7 @@ export function WhatIf({ degrees, states, terms, plannerState, courseEquivalents
             Worth trying (count toward the most requirements):{' '}
             {suggestions.map((s) => (
               <button class="pl-chip none pl-click" onClick={() => save([...tryCodes, normalizeCode(s.code)])} title={`Appears in ${s.n} requirement group(s)`}>
-                + {s.code}
+                + {labelOf(s.code)}
               </button>
             ))}
           </p>
@@ -123,7 +130,7 @@ export function WhatIf({ degrees, states, terms, plannerState, courseEquivalents
               const impact = result.courseImpact.get(code) ?? 0;
               return (
                 <span class={`pl-whatif-chip${impact === 0 ? ' zero' : ''}`}>
-                  {code}
+                  {labelOf(code)}
                   <span class="pl-whatif-impact" title={impact === 0 ? 'This course would not advance any requirement — check the code, or it may already be counted' : `Advances ${impact} requirement group(s)`}>
                     {impact === 0 ? '⚠ no effect' : `+${impact} req${impact === 1 ? '' : 's'}`}
                   </span>

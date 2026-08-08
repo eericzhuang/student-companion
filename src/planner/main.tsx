@@ -24,6 +24,8 @@ import {
   type GroupEvaluation,
 } from './engine/requirements';
 import { computeLevel, effectiveThemeLevel } from './engine/levels';
+import { buildCourseTitleMap, titleFor } from './engine/titles';
+import { courseTitle } from '../shared/schedule';
 import { LevelChip, LevelHero } from './LevelHero';
 import { GpaCard } from './GpaCard';
 import { Guide } from './Guide';
@@ -142,6 +144,7 @@ function GroupRow({
               onClick={clickable ? () => onToggleTaken(c.course, !taken) : undefined}
             >
               {c.course.code}
+              {courseTitle(c.course.code, c.course.title) ? ` · ${courseTitle(c.course.code, c.course.title)}` : ''}
               {c.via ? ` ⇐ ${c.via}` : ''}
             </span>
           );
@@ -213,12 +216,17 @@ function App() {
     for (const d of degrees)
       for (const g of d.groups)
         for (const c of g.courses) if (c.credits) catalogCredits.set(c.code, c.credits);
+    const titles = buildCourseTitleMap(degrees, historyCourses, store.schedule?.sections ?? []);
     const seen = new Set<string>();
-    const gpaCandidates: Array<{ code: string; credits: number }> = [];
+    const gpaCandidates: Array<{ code: string; credits: number; title?: string }> = [];
     const addCandidate = (code: string, credits: number | null | undefined) => {
       if (seen.has(code)) return;
       seen.add(code);
-      gpaCandidates.push({ code, credits: credits || catalogCredits.get(code) || 3 });
+      gpaCandidates.push({
+        code,
+        credits: credits || catalogCredits.get(code) || 3,
+        title: titleFor(titles, code) || undefined,
+      });
     };
     const graded = new Set(
       historyCourses.filter((c) => c.status === 'completed' && c.grade).map((c) => c.code),

@@ -29,9 +29,12 @@ const STROKE: Record<string, string> = {
 export function PrereqGraph({
   prereqs,
   states,
+  titles,
 }: {
   prereqs: Record<string, string[]>;
   states: CourseStates;
+  /** code -> full course name, for node tooltips (nodes are too small for inline titles) */
+  titles?: Map<string, string>;
 }) {
   const graph = useMemo(() => layoutPrereqGraph(prereqs, states), [prereqs, states]);
   if (graph.edges.length === 0) {
@@ -94,7 +97,9 @@ export function PrereqGraph({
                 stroke-width="1.4"
               >
                 <title>
-                  {n.code} — {n.state === 'none' ? 'not taken' : n.state}
+                  {n.code}
+                  {titles?.get(n.code) ? ` · ${titles.get(n.code)}` : ''} —{' '}
+                  {n.state === 'none' ? 'not taken' : n.state}
                 </title>
               </rect>
               <text

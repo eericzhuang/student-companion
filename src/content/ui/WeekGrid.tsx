@@ -7,6 +7,7 @@ import { useMemo } from 'preact/hooks';
 import { DAYS, type DayMask, type Meeting, type Section } from '../../shared/types';
 import { formatMinutes, meetingsOverlap } from '../../shared/time';
 import { meetingKey } from '../../shared/route';
+import { courseTitle } from '../../shared/schedule';
 import { displayInstructorName } from '../../shared/fuzzy';
 import { ratingClass } from '../../shared/rmpUrl';
 
@@ -77,6 +78,7 @@ export function WeekGrid({ sections, ghost, warnings, onEventClick, scale = 1, r
   const renderBlocks = (dayMask: DayMask) => {
     const blocks = [];
     for (const section of sections) {
+      const title = courseTitle(section.courseCode, section.title);
       for (const m of section.meetings) {
         if (!(m.days & dayMask)) continue;
         const conflictsGhost =
@@ -93,7 +95,7 @@ export function WeekGrid({ sections, ghost, warnings, onEventClick, scale = 1, r
               height: `${heightPx}px`,
               background: colorFor(section.sectionId),
             }}
-            title={`${section.courseCode} ${formatMinutes(m.startMin)}–${formatMinutes(m.endMin)}${m.location ? ` · ${m.location}` : ''}${section.instructor ? ` · ${section.instructor}` : ''}${warn ? `\n⚠ ${warn.text}` : ''}${onEventClick ? '\nClick for details' : ''}`}
+            title={`${section.courseCode}${title ? ` · ${title}` : ''} ${formatMinutes(m.startMin)}–${formatMinutes(m.endMin)}${m.location ? ` · ${m.location}` : ''}${section.instructor ? ` · ${section.instructor}` : ''}${warn ? `\n⚠ ${warn.text}` : ''}${onEventClick ? '\nClick for details' : ''}`}
             onClick={() => onEventClick?.(section, m)}
           >
             {warn && (
@@ -102,11 +104,12 @@ export function WeekGrid({ sections, ghost, warnings, onEventClick, scale = 1, r
               </span>
             )}
             <div>{section.courseCode}</div>
+            {title && heightPx > 30 && <div class="wdc-block-title">{title}</div>}
             <div class="wdc-block-time">
               {formatMinutes(m.startMin)}–{formatMinutes(m.endMin)}
             </div>
-            {m.location && heightPx > 42 && <div class="wdc-block-room">📍 {m.location}</div>}
-            {section.instructor && heightPx > 58 && (
+            {m.location && heightPx > (title ? 54 : 42) && <div class="wdc-block-room">📍 {m.location}</div>}
+            {section.instructor && heightPx > (title ? 70 : 58) && (
               <div class="wdc-block-room">
                 👤 {displayInstructorName(section.instructor)}
                 {ratings?.get(section.instructor) != null && (
@@ -121,17 +124,21 @@ export function WeekGrid({ sections, ghost, warnings, onEventClick, scale = 1, r
       }
     }
     if (ghost) {
+      const ghostTitle = courseTitle(ghost.courseCode, ghost.title);
       for (const m of ghost.meetings) {
         if (!(m.days & dayMask)) continue;
+        const ghostH = Math.max((m.endMin - m.startMin) * pxPerMin, 14);
         blocks.push(
           <div
             class="wdc-block wdc-block-ghost"
             style={{
               top: `${top(m.startMin)}px`,
-              height: `${Math.max((m.endMin - m.startMin) * pxPerMin, 14)}px`,
+              height: `${ghostH}px`,
             }}
+            title={`${ghost.courseCode}${ghostTitle ? ` · ${ghostTitle}` : ''}`}
           >
             <div>{ghost.courseCode}</div>
+            {ghostTitle && ghostH > 30 && <div class="wdc-block-title">{ghostTitle}</div>}
             <div class="wdc-block-time">
               {formatMinutes(m.startMin)}–{formatMinutes(m.endMin)}
             </div>

@@ -303,6 +303,15 @@
   color: #64748b;
 }
 
+.wdc-capture-history-row .wdc-hist-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
 .wdc-capture-chip {
   background: #e0f2fe;
   color: #075985;
@@ -584,6 +593,15 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
+.wdc-edit-titletext {
+  padding: 0 10px 2px;
+  color: #64748b;
+  font-size: 10.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .wdc-edit-code {
   flex: 0 0 96px;
   padding: 3px 6px;
@@ -757,6 +775,14 @@
 .wdc-block .wdc-block-time {
   opacity: 0.85;
   font-size: 8.5px;
+}
+
+.wdc-block .wdc-block-title {
+  font-size: 8.5px;
+  opacity: 0.95;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .wdc-block-ghost {
@@ -1078,6 +1104,19 @@
   border-radius: 8px;
   font-size: 12px;
 }
+.wdc-itin-stop > b {
+  white-space: nowrap;
+}
+
+.wdc-itin-title {
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
 .wdc-itin-num {
   flex: 0 0 auto;
   display: inline-flex;
@@ -1284,6 +1323,8 @@
 .wdc-dark .wdc-finals-when,
 .wdc-dark .wdc-finals-loc,
 .wdc-dark .wdc-itin-time { color: #94a3b8; }
+.wdc-dark .wdc-itin-title,
+.wdc-dark .wdc-edit-titletext { color: #94a3b8; }
 .wdc-dark .wdc-friend-result,
 .wdc-dark .wdc-itin-leg { color: #cbd5e1; }
 .wdc-dark .wdc-preview-banner { background: #3a3417; border-color: #6b5d1a; color: #fde68a; }
