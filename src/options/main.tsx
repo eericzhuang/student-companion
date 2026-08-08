@@ -14,6 +14,7 @@ import {
 } from '../background/messages';
 import { isPro, isSupreme } from '../shared/plan';
 import { parseLatLng } from '../shared/coords';
+import { normalizeCanvasDomain } from '../shared/canvas';
 import { billingEnabled } from '../shared/billing';
 import { extractPdfText } from './pdf';
 
@@ -48,6 +49,7 @@ function App() {
       <AcademicHistorySection />
       <ApiKeySection settings={settings} patch={patch} />
       <TermSection settings={settings} patch={patch} />
+      <CanvasSection settings={settings} patch={patch} />
       <CampusMapSection settings={settings} patch={patch} />
       {settings.admin && <AdvancedSelectors settings={settings} patch={patch} />}
       <FeedbackSection settings={settings} />
@@ -690,6 +692,74 @@ async function sha256Hex(text: string): Promise<string> {
  * warnings. Filled by free geocoding / AI research from the calendar's Route
  * view; fully editable here. Walking speed feeds the same estimates.
  */
+/**
+ * Link calendar events to Canvas: the user enters their school's Canvas host
+ * once; saving asks Chrome for permission to that one site so the background
+ * can read the user's own Canvas course list (read-only, their session) and
+ * deep-link each event to its course page.
+ */
+function CanvasSection({ settings, patch }: SectionProps) {
+  const [input, setInput] = useState(settings.canvasDomain ?? '');
+  const [status, setStatus] = useState<string | null>(null);
+
+  const save = async () => {
+    const domain = normalizeCanvasDomain(input);
+    if (!domain) {
+      setStatus("That doesn't look like a web address — try e.g. canvas.yourschool.edu");
+      return;
+    }
+    let granted = false;
+    try {
+      granted = await chrome.permissions.request({ origins: [`https://${domain}/*`] });
+    } catch {
+      granted = false;
+    }
+    await patch({ canvasDomain: domain });
+    setInput(domain);
+    setStatus(
+      granted
+        ? `✓ Connected to ${domain} — calendar events now link to their Canvas course pages.`
+        : `Saved, but without permission for ${domain} events can only link to your Canvas course list — hit Connect again to grant it.`,
+    );
+  };
+
+  const clear = async () => {
+    await patch({ canvasDomain: null });
+    setInput('');
+    setStatus('Canvas links turned off.');
+  };
+
+  return (
+    <div class="pl-card">
+      <h2>🎨 Canvas</h2>
+      <p class="pl-muted">
+        Enter your school's Canvas address and each class in the calendar links straight to its
+        Canvas course page (from the event popup). The extension only reads your own course list
+        from Canvas — using your existing Canvas login, nothing is posted or changed.
+      </p>
+      <div class="pl-row">
+        <input
+          type="text"
+          placeholder="e.g. canvas.yourschool.edu or yourschool.instructure.com"
+          value={input}
+          onInput={(e) => setInput((e.target as HTMLInputElement).value)}
+          onKeyDown={(e) => e.key === 'Enter' && void save()}
+          style={{ flex: 1 }}
+        />
+        <button class="pl-btn" onClick={() => void save()} disabled={!input.trim()}>
+          {settings.canvasDomain ? 'Update' : 'Connect'}
+        </button>
+        {settings.canvasDomain && (
+          <button class="pl-btn secondary" onClick={() => void clear()}>
+            Disconnect
+          </button>
+        )}
+      </div>
+      {status && <p class="pl-muted" style={{ marginTop: '6px' }}>{status}</p>}
+    </div>
+  );
+}
+
 function CampusMapSection({ settings, patch }: SectionProps) {
   const [map, setMap] = useState<CampusMap | null>(null);
   const [name, setName] = useState('');

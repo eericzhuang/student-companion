@@ -65,6 +65,8 @@ export type ExtRequest =
   | { kind: 'LICENSE_ACTIVATE'; code: string }
   | { kind: 'AI_HISTORY_CLEAR' }
   | { kind: 'AI_HISTORY_REMOVE'; ids: string[] }
+  // --- Canvas LMS link (from content UI) ---
+  | { kind: 'CANVAS_LOOKUP'; courseCode: string }
   // --- navigation ---
   | { kind: 'OPEN_PLANNER' }
   | { kind: 'OPEN_SUBSCRIBE' };
@@ -77,6 +79,15 @@ export interface MapLookupResult {
   map: CampusMap;
   /** buildings still without coordinates after the lookup */
   missing: string[];
+}
+
+export interface CanvasLookupResult {
+  /** course page when matched, else the Canvas course list; null = not set up */
+  url: string | null;
+  matched: boolean;
+  /** true when no Canvas domain is configured in Options yet */
+  needsSetup: boolean;
+  note?: string;
 }
 
 export interface RmpLookupResult {

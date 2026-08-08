@@ -127,10 +127,14 @@ courses.”
   pairs of building coordinates to draw the walking path between consecutive
   classes in the Route view. Coordinates only; no personal data.”
 - `optional_host_permissions https://*/*` — “Requested at runtime for ONE
-  specific origin at a time, only when the user pastes the URL of their
-  university's degree-requirements page, to fetch that single page without
-  cookies for import. A paste-the-text fallback exists; the broad pattern is
-  needed because every university hosts its catalog on a different domain.”
+  specific origin at a time, in exactly two user-initiated cases: (1) when the
+  user pastes the URL of their university's degree-requirements page, to fetch
+  that single page without cookies for import (a paste-the-text fallback
+  exists); (2) when the user enters their school's Canvas address in Options,
+  to read the user's own Canvas course list (id/code/name, via the user's
+  existing Canvas session, read-only) so calendar events can link to their
+  Canvas course pages. The broad pattern is needed because every university
+  hosts its catalog and Canvas instance on a different domain.”
 
 **Reviewer notes (add in the ‘additional details’ / review notes box):**
 

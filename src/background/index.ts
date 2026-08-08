@@ -24,6 +24,7 @@ import {
   relocateBuildings,
   setCampusMap,
 } from './map';
+import { canvasLookup } from './canvas';
 import { handleRegistrationAlarm, REG_ALARM_PREFIX, syncRegistrationAlarms } from './reminders';
 import { activateLicense, refreshLicense } from './billing';
 import { parseTranscriptText } from '../shared/transcript';
@@ -172,6 +173,8 @@ async function handle(req: ExtRequest, trusted: boolean): Promise<unknown> {
     }
     case 'RMP_LOOKUP':
       return lookupInstructor(req.instructorName);
+    case 'CANVAS_LOOKUP':
+      return canvasLookup(req.courseCode);
     case 'RMP_SEARCH_TEACHERS': {
       const { settings } = await getAllStored();
       if (!settings.rmpSchool) return { teachers: [] };

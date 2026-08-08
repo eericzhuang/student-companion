@@ -180,6 +180,12 @@ const chromeStub = {
           write('reqOverrides', cur);
           return { ok: true };
         }
+        case 'CANVAS_LOOKUP': {
+          // canned deep link so the event popup shows the Canvas row in the demo
+          const code = String(req.courseCode ?? '');
+          const id = [...code].reduce((a, c) => a + c.charCodeAt(0), 0);
+          return { ok: true, data: { url: `https://canvas.example.edu/courses/${10000 + id}`, matched: true, needsSetup: false } };
+        }
         case 'RMP_SEARCH_TEACHERS':
           return { ok: true, data: { teachers: mockRmpTeachers } };
         case 'AI_HISTORY_CLEAR':

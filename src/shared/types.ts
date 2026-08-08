@@ -216,6 +216,9 @@ export interface Settings {
   /** owner-only: Google Maps Geocoding API key — building lookups use Google
    *  (more accurate on campuses) instead of the keyless OSM fallback */
   googleMapsApiKey?: string | null;
+  /** the school's Canvas host (e.g. "canvas.cornell.edu") — links calendar
+   *  events to their Canvas course pages; unset = no Canvas links */
+  canvasDomain?: string | null;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -284,6 +287,23 @@ export interface Scenario {
 
 // ---------- Storage root ----------
 
+// ---------- Canvas (LMS) links ----------
+
+/** One Canvas course, as returned by the school's own Canvas API. */
+export interface CanvasCourse {
+  id: number;
+  /** Canvas "course_code" (e.g. "2026SP-CS-2110") */
+  code: string;
+  name: string;
+}
+
+export interface CanvasCourseCache {
+  /** Canvas host the list came from — invalidated when the setting changes */
+  domain: string;
+  courses: CanvasCourse[];
+  fetchedAt: number;
+}
+
 export interface StorageShape {
   schemaVersion: number;
   settings: Settings;
@@ -305,6 +325,8 @@ export interface StorageShape {
   campusMap: CampusMap;
   /** saved candidate schedules (Plan A / Plan B) */
   scenarios: Scenario[];
+  /** cached Canvas course list (id + code + name only), for event → course links */
+  canvasCourses: CanvasCourseCache | null;
 }
 
 /**
@@ -329,4 +351,5 @@ export const STORAGE_DEFAULTS: StorageShape = {
   reqOverrides: {},
   campusMap: { school: null, buildings: {} },
   scenarios: [],
+  canvasCourses: null,
 };

@@ -4,6 +4,11 @@ All notable user-facing changes to the extension.
 
 ## Unreleased
 
+- **Canvas course links**: enter your school's Canvas address in Options and
+  every calendar event's popup gains an "Open in Canvas" link straight to that
+  course's Canvas page (matched against your own Canvas course list, read via
+  your existing Canvas login; falls back to your Canvas course list when no
+  exact match is found).
 - **Full course names everywhere**: every course display now shows the full
   title next to the code (e.g. "CS 2110 · Object-Oriented Programming & Data
   Structures") — calendar blocks, route itinerary, edit list, finals, capture

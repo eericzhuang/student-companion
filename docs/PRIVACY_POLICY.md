@@ -89,6 +89,14 @@ from the extension's own UI.
    schedule details — and only when you use the feature. Per OpenStreetMap's
    usage policy those requests identify the extension (not you) via the
    developer's contact email.
+6. **Canvas course links** (your school's Canvas site, optional): if you enter
+   your school's Canvas address in Options, the extension asks Chrome for
+   permission for **that one site** and then reads **your own course list**
+   from Canvas's API (course id, code, and name only), using the Canvas login
+   session already in your browser, so calendar events can link straight to
+   their Canvas course pages. The request is read-only — nothing is posted,
+   changed, or sent to anyone else — and the cached list stays on your device.
+   Leave the setting empty and no Canvas request is ever made.
 
 ## What the extension reads on Workday
 

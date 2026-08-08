@@ -23,7 +23,7 @@ import type {
 } from '../../shared/types';
 import { scenarioMetrics } from '../../shared/scenario';
 import { getStored, onStoredChange } from '../../shared/storage';
-import { sendToBackground, type RmpLookupResult } from '../../background/messages';
+import { sendToBackground, type CanvasLookupResult, type RmpLookupResult } from '../../background/messages';
 import type { GeocodeCandidate, GeocodePreview } from '../../background/map';
 import { computeFreeSlots, dayMaskToLabels, formatMinutes } from '../../shared/time';
 import {
@@ -360,6 +360,7 @@ function EventDetails({
   onClose: () => void;
 }) {
   const [rmp, setRmp] = useState<RmpLookupResult | null>(null);
+  const [canvas, setCanvas] = useState<CanvasLookupResult | null>(null);
 
   useEffect(() => {
     setRmp(null);
@@ -369,6 +370,13 @@ function EventDetails({
         .catch(() => setRmp(null));
     }
   }, [section.sectionId, section.instructor]);
+
+  useEffect(() => {
+    setCanvas(null);
+    void sendToBackground<CanvasLookupResult>({ kind: 'CANVAS_LOOKUP', courseCode: section.courseCode })
+      .then(setCanvas)
+      .catch(() => setCanvas(null));
+  }, [section.courseCode]);
 
   const t = rmp?.entry?.teacher ?? null;
   const url = t ? rmpProfessorUrl(t.teacherId) : null;
@@ -409,6 +417,21 @@ function EventDetails({
         {rmp && rmp.entry && !t && <span class="wdc-event-rmp"> · no RMP match</span>}
         {rmp?.needsSetup && <span class="wdc-event-rmp"> · pick your school in ⚙ Options for ratings</span>}
       </div>
+      {canvas && (
+        <div class="wdc-event-pop-row">
+          🎨{' '}
+          {canvas.url ? (
+            <a href={canvas.url} target="_blank" rel="noreferrer" title={canvas.note}>
+              {canvas.matched ? `Open ${section.courseCode} in Canvas ↗` : 'Open Canvas courses ↗'}
+            </a>
+          ) : (
+            <span class="wdc-event-rmp">add your school's Canvas address in ⚙ Options for course links</span>
+          )}
+          {canvas.url && !canvas.matched && (
+            <span class="wdc-event-rmp"> · no exact course match</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
