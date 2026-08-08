@@ -12,7 +12,7 @@ import type { Section, Settings } from '../../shared/types';
 import type { ResultRow } from '../scrapers/findCourseSections';
 import { scrapeResultRows } from '../scrapers/findCourseSections';
 import { ghostSection } from './CalendarPanel';
-import { showCaptureToast } from './captureState';
+import { showCaptureToast, showTitlesPref } from './captureState';
 import { openRmpPopover } from './RmpPopover';
 import badgeCss from './badges.css?inline';
 
@@ -141,7 +141,11 @@ function applyAddButton(row: ResultRow, scheduleSections: Section[]): void {
     }).catch(() => {});
     btn.textContent = '✓ on calendar';
     btn.classList.add('added');
-    showCaptureToast(`✓ Added ${courseLabel(row.courseCode ?? row.sectionId, row.title)} to your calendar.`);
+    showCaptureToast(
+      `✓ Added ${
+        showTitlesPref.peek() ? courseLabel(row.courseCode ?? row.sectionId, row.title) : row.courseCode ?? row.sectionId
+      } to your calendar.`,
+    );
   });
   anchorFor(row).appendChild(btn);
 }

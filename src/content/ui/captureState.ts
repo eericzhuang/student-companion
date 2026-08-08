@@ -1,6 +1,16 @@
 /** Shared reactive state between the content bootstrap and the capture widget. */
 import { signal } from '@preact/signals';
 import type { WorkdayPage } from '../pageDetect';
+import { getStored, onStoredChange } from '../../shared/storage';
+
+/**
+ * settings.showCourseTitles, kept live for every content component. Off by
+ * default — full names take space and scraped titles can be messy; tooltips
+ * and the PNG export carry the full name regardless.
+ */
+export const showTitlesPref = signal(false);
+void getStored('settings').then((s) => (showTitlesPref.value = s.showCourseTitles === true));
+onStoredChange('settings', (s) => (showTitlesPref.value = s.showCourseTitles === true));
 
 /** Which Workday page the content script currently thinks we're on. */
 export const currentPageSignal = signal<WorkdayPage>('unknown');

@@ -219,6 +219,10 @@ export interface Settings {
   /** the school's Canvas host (e.g. "canvas.cornell.edu") — links calendar
    *  events to their Canvas course pages; unset = no Canvas links */
   canvasDomain?: string | null;
+  /** show full course names next to codes across the UI. Off by default:
+   *  titles are scraped from Workday (sometimes messy) and take space.
+   *  Tooltips and the PNG export always include the full name. */
+  showCourseTitles?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {

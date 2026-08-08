@@ -19,9 +19,11 @@ interface Props {
   plannerState: PlannerState;
   courseEquivalents: Record<string, string[]>;
   reqOverrides: Parameters<typeof evaluateWhatIf>[4];
+  /** append full course names to codes (⚙ Options, off by default) */
+  showTitles: boolean;
 }
 
-export function WhatIf({ degrees, states, terms, plannerState, courseEquivalents, reqOverrides }: Props) {
+export function WhatIf({ degrees, states, terms, plannerState, courseEquivalents, reqOverrides, showTitles }: Props) {
   const [input, setInput] = useState('');
   // Course code whose term-picker dropdown is open (multi-term commit).
   const [pickFor, setPickFor] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export function WhatIf({ degrees, states, terms, plannerState, courseEquivalents
     [degrees, states, tryCodes, courseEquivalents, reqOverrides],
   );
 
-  const titles = useMemo(() => buildCourseTitleMap(degrees), [degrees]);
+  const titles = useMemo(() => (showTitles ? buildCourseTitleMap(degrees) : new Map<string, string>()), [degrees, showTitles]);
   const labelOf = (code: string) => {
     const t = titleFor(titles, code);
     return t ? `${code} · ${t}` : code;

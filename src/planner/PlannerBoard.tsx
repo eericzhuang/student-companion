@@ -20,9 +20,11 @@ interface Props {
   courseEquivalents: Record<string, string[]>;
   reqOverrides: Record<string, ReqOverrideValue>;
   onStateChange: (next: PlannerState) => void;
+  /** append full course names to codes (⚙ Options, off by default) */
+  showTitles: boolean;
 }
 
-export function PlannerBoard({ degrees, states, terms, plannerState, prereqOverrides, courseEquivalents, reqOverrides, onStateChange }: Props) {
+export function PlannerBoard({ degrees, states, terms, plannerState, prereqOverrides, courseEquivalents, reqOverrides, onStateChange, showTitles }: Props) {
   const [dragCode, setDragCode] = useState<string | null>(null);
   const [dragOverTerm, setDragOverTerm] = useState<string | null>(null);
 
@@ -223,7 +225,8 @@ export function PlannerBoard({ degrees, states, terms, plannerState, prereqOverr
 
       {suggestion.unplaced.length > 0 && (
         <div class="pl-error">
-          Doesn't fit in your configured terms: {suggestion.unplaced.map((c) => courseLabel(c.code, c.title)).join(', ')}
+          Doesn't fit in your configured terms:{' '}
+          {suggestion.unplaced.map((c) => (showTitles ? courseLabel(c.code, c.title) : c.code)).join(', ')}
           {suggestion.cyclic.length > 0 &&
             ` (check prerequisites of ${suggestion.cyclic.join(', ')} — they may be circular)`}
           . Add more terms in options or raise credit caps.
@@ -253,7 +256,7 @@ export function PlannerBoard({ degrees, states, terms, plannerState, prereqOverr
                   const rc = plan.requirementCount.get(normalizeCode(c.code)) ?? 1;
                   return (
                     <span class="pl-chip planned" title="auto-picked to satisfy this group">
-                      {rc > 1 ? '⭐ ' : ''}✓ {courseLabel(c.code, c.title)}
+                      {rc > 1 ? '⭐ ' : ''}✓ {showTitles ? courseLabel(c.code, c.title) : c.code}
                     </span>
                   );
                 })}
@@ -271,7 +274,7 @@ export function PlannerBoard({ degrees, states, terms, plannerState, prereqOverr
                         title={rc > 1 ? `Recommended — satisfies ${rc} requirements` : 'other option you could choose instead'}
                       >
                         {rc > 1 ? '⭐ ' : ''}
-                        {courseLabel(c.code, c.title)}
+                        {showTitles ? courseLabel(c.code, c.title) : c.code}
                       </span>
                     );
                   })}

@@ -52,10 +52,12 @@ function GroupRow({
   g,
   degreeId,
   onToggleTaken,
+  showTitles,
 }: {
   g: GroupEvaluation;
   degreeId: string | null;
   onToggleTaken: (course: RequirementCourse, taken: boolean) => void;
+  showTitles: boolean;
 }) {
   // Manual override: the student can overrule the computed status with a full
   // verdict (met/unmet) or a completed count (e.g. "2 of these are done") —
@@ -144,7 +146,9 @@ function GroupRow({
               onClick={clickable ? () => onToggleTaken(c.course, !taken) : undefined}
             >
               {c.course.code}
-              {courseTitle(c.course.code, c.course.title) ? ` · ${courseTitle(c.course.code, c.course.title)}` : ''}
+              {showTitles && courseTitle(c.course.code, c.course.title)
+                ? ` · ${courseTitle(c.course.code, c.course.title)}`
+                : ''}
               {c.via ? ` ⇐ ${c.via}` : ''}
             </span>
           );
@@ -216,7 +220,10 @@ function App() {
     for (const d of degrees)
       for (const g of d.groups)
         for (const c of g.courses) if (c.credits) catalogCredits.set(c.code, c.credits);
-    const titles = buildCourseTitleMap(degrees, historyCourses, store.schedule?.sections ?? []);
+    const showTitles = store.settings.showCourseTitles === true;
+    const titles = showTitles
+      ? buildCourseTitleMap(degrees, historyCourses, store.schedule?.sections ?? [])
+      : new Map<string, string>();
     const seen = new Set<string>();
     const gpaCandidates: Array<{ code: string; credits: number; title?: string }> = [];
     const addCandidate = (code: string, credits: number | null | undefined) => {
@@ -236,7 +243,7 @@ function App() {
       if (!graded.has(s.courseCode)) addCandidate(s.courseCode, s.credits);
     for (const code of Object.keys(store.plannerState.assignments))
       if (!graded.has(code)) addCandidate(code, null);
-    return { degrees, states, evaluations, gpaCandidates };
+    return { degrees, states, evaluations, gpaCandidates, showTitles };
   }, [store]);
 
   if (!store || !derived) return <div class="pl-shell">Loading…</div>;
@@ -493,7 +500,7 @@ function App() {
                   )}
                 </div>
                 {ev.groups.map((g) => (
-                  <GroupRow g={g} degreeId={stored?.id ?? null} onToggleTaken={toggleTaken} />
+                  <GroupRow g={g} degreeId={stored?.id ?? null} onToggleTaken={toggleTaken} showTitles={derived.showTitles} />
                 ))}
               </div>
             );
@@ -509,6 +516,7 @@ function App() {
           plannerState={store.plannerState}
           courseEquivalents={store.courseEquivalents}
           reqOverrides={store.reqOverrides}
+          showTitles={derived.showTitles}
         />
       )}
 
@@ -536,6 +544,7 @@ function App() {
           courseEquivalents={store.courseEquivalents}
           reqOverrides={store.reqOverrides}
           onStateChange={onPlannerStateChange}
+          showTitles={derived.showTitles}
         />
       )}
 

@@ -110,6 +110,18 @@ describe('scrape cleanup (real Workday tenant junk)', () => {
     expect(cleanSectionTitle('CS 2110', 'Object-Oriented Programming & Data Structures')).toBe(
       'Object-Oriented Programming & Data Structures',
     );
+    // repeated section-id tail
+    expect(
+      cleanSectionTitle('SDS 4030', 'SDS 4030 - Statistics for DS IISDS 4030-01 - Statistics for DS IILec'),
+    ).toBe('Statistics for DS II');
+    // meeting pattern concatenated after the title
+    expect(cleanSectionTitle('CS 2110', 'CS 2110 - Object-Oriented ProgrammingMWF 10:00 AM - 10:50 AM')).toBe(
+      'Object-Oriented Programming',
+    );
+    // pipe-separated location junk
+    expect(cleanSectionTitle('CS 2110', 'CS 2110 - Intro | Hollister 110')).toBe('Intro');
+    // credits glued onto the last word
+    expect(cleanSectionTitle('SDS 4030', 'SDS 4030 - Statistics for DS II3')).toBe('Statistics for DS II');
   });
 
   it('courseLabel/courseTitle append the full name only when one is known', async () => {
@@ -126,6 +138,8 @@ describe('scrape cleanup (real Workday tenant junk)', () => {
     expect(courseLabel('CSE 4107', 'cse 4107')).toBe('CSE 4107');
     expect(courseTitle('CSE 4107', 'CSE 4107')).toBe('');
     expect(courseTitle('CS 2110', 'CS 2110 - OOP3Quality Graded Credit')).toBe('OOP');
+    // junk the cleaner can't untangle is suppressed rather than shown
+    expect(courseTitle('CS 2110', 'x'.repeat(120))).toBe('');
   });
 
   it('transitions carry straight-line distance', () => {

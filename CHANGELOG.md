@@ -9,12 +9,15 @@ All notable user-facing changes to the extension.
   course's Canvas page (matched against your own Canvas course list, read via
   your existing Canvas login; falls back to your Canvas course list when no
   exact match is found).
-- **Full course names everywhere**: every course display now shows the full
-  title next to the code (e.g. "CS 2110 · Object-Oriented Programming & Data
-  Structures") — calendar blocks, route itinerary, edit list, finals, capture
-  chips and history, friend compare, image export, planner progress chips,
-  GPA what-if rows, what-if suggestions, semester-board elective picks, AI
-  history, and prereq-graph tooltips.
+- **Full course names (optional)**: turn on "Show full course names" in
+  Options to see "CS 2110 · Object-Oriented Programming" style labels across
+  the calendar, capture widget, and planner. Off by default so the compact
+  views stay compact — hover tooltips and the 📷 image export always include
+  the full name, and title cleanup handles Workday's concatenated
+  section/time/credit junk much better.
+- **Two-speed beginner guide**: the tour now opens with a choice — a ⚡ 30-second
+  Quick tour (4 cards) or the Full tour (13 cards) — both covering the newest
+  features (Canvas links, full course names).
 
 ## 0.1.0 — 2026-07-15 (first public release)
 

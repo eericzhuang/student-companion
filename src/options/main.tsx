@@ -103,6 +103,15 @@ function FeatureToggles({ settings, patch }: SectionProps) {
         />{' '}
         Show the floating “Capture” button on Workday pages
       </label>
+      <label style={{ display: 'block', margin: '6px 0' }}>
+        <input
+          type="checkbox"
+          checked={settings.showCourseTitles === true}
+          onChange={(e) => void patch({ showCourseTitles: (e.target as HTMLInputElement).checked })}
+        />{' '}
+        Show full course names next to codes (e.g. “CS 2110 · Object-Oriented Programming”) —
+        takes more space; hover tooltips and the 📷 image export always include the full name
+      </label>
       <div style={{ margin: '10px 0 2px' }}>
         🌙 Appearance:{' '}
         {(['auto', 'light', 'dark'] as const).map((a) => (

@@ -8,6 +8,7 @@ import { useMemo } from 'preact/hooks';
 import { DAYS, type DayMask, type Section } from '../../shared/types';
 import { formatMinutes } from '../../shared/time';
 import { courseLabel } from '../../shared/schedule';
+import { showTitlesPref } from './captureState';
 
 const DAY_ORDER: Array<{ mask: DayMask; label: string }> = [
   { mask: DAYS.MON, label: 'Mon' },
@@ -93,7 +94,7 @@ export function CompareGrid({
             style={{ top: `${top(m.startMin)}px`, height: `${Math.max((m.endMin - m.startMin) * PX_PER_MIN, 13)}px` }}
             title={`${side === 'mine' ? 'You' : friendName}: ${courseLabel(s.courseCode, s.title)} ${formatMinutes(m.startMin)}–${formatMinutes(m.endMin)}`}
           >
-            {courseLabel(s.courseCode, s.title)}
+            {showTitlesPref.value ? courseLabel(s.courseCode, s.title) : s.courseCode}
           </div>
         )),
     );

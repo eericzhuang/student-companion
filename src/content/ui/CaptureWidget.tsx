@@ -26,6 +26,7 @@ import {
   currentPageSignal,
   rmpPanelSignal,
   showCaptureToast,
+  showTitlesPref,
 } from './captureState';
 import { useDraggable } from './useDraggable';
 import { isPro } from '../../shared/plan';
@@ -254,7 +255,7 @@ export function CaptureWidget() {
           <div class="wdc-capture-chips">
             {scheduleSections.map((s) => (
               <span class="wdc-capture-chip" title={s.title}>
-                {courseLabel(s.courseCode, s.title)}
+                {showTitlesPref.value ? courseLabel(s.courseCode, s.title) : s.courseCode}
               </span>
             ))}
           </div>
@@ -343,7 +344,7 @@ export function CaptureWidget() {
               {history.courses.map((c) => (
                 <div class="wdc-capture-history-row">
                   <b>{c.code}</b>
-                  {courseTitle(c.code, c.title) && (
+                  {showTitlesPref.value && courseTitle(c.code, c.title) && (
                     <span class="wdc-hist-title">{courseTitle(c.code, c.title)}</span>
                   )}
                   <span>

@@ -8,6 +8,7 @@ import { DAYS, type DayMask, type Meeting, type Section } from '../../shared/typ
 import { formatMinutes, meetingsOverlap } from '../../shared/time';
 import { meetingKey } from '../../shared/route';
 import { courseTitle } from '../../shared/schedule';
+import { showTitlesPref } from './captureState';
 import { displayInstructorName } from '../../shared/fuzzy';
 import { ratingClass } from '../../shared/rmpUrl';
 
@@ -40,6 +41,9 @@ interface Props {
 }
 
 export function WeekGrid({ sections, ghost, warnings, onEventClick, scale = 1, ratings }: Props) {
+  // Inline full names are opt-in (⚙ Options) — they crowd the small blocks.
+  // Tooltips keep the full name either way.
+  const showTitles = showTitlesPref.value;
   const pxPerMin = PX_PER_MIN * Math.max(1, scale);
   const all = useMemo(() => [...sections, ...(ghost ? [ghost] : [])], [sections, ghost]);
 
@@ -104,12 +108,12 @@ export function WeekGrid({ sections, ghost, warnings, onEventClick, scale = 1, r
               </span>
             )}
             <div>{section.courseCode}</div>
-            {title && heightPx > 30 && <div class="wdc-block-title">{title}</div>}
+            {showTitles && title && heightPx > 30 && <div class="wdc-block-title">{title}</div>}
             <div class="wdc-block-time">
               {formatMinutes(m.startMin)}–{formatMinutes(m.endMin)}
             </div>
-            {m.location && heightPx > (title ? 54 : 42) && <div class="wdc-block-room">📍 {m.location}</div>}
-            {section.instructor && heightPx > (title ? 70 : 58) && (
+            {m.location && heightPx > (showTitles && title ? 54 : 42) && <div class="wdc-block-room">📍 {m.location}</div>}
+            {section.instructor && heightPx > (showTitles && title ? 70 : 58) && (
               <div class="wdc-block-room">
                 👤 {displayInstructorName(section.instructor)}
                 {ratings?.get(section.instructor) != null && (
@@ -138,7 +142,7 @@ export function WeekGrid({ sections, ghost, warnings, onEventClick, scale = 1, r
             title={`${ghost.courseCode}${ghostTitle ? ` · ${ghostTitle}` : ''}`}
           >
             <div>{ghost.courseCode}</div>
-            {ghostTitle && ghostH > 30 && <div class="wdc-block-title">{ghostTitle}</div>}
+            {showTitles && ghostTitle && ghostH > 30 && <div class="wdc-block-title">{ghostTitle}</div>}
             <div class="wdc-block-time">
               {formatMinutes(m.startMin)}–{formatMinutes(m.endMin)}
             </div>
