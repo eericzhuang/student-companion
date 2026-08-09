@@ -4,6 +4,12 @@ All notable user-facing changes to the extension.
 
 ## Unreleased
 
+- **Cleaner course names**: trailing "Actions" column text from Workday rows
+  is stripped from captured titles.
+- **Visual guide video**: `store-assets/visual-guide.mp4` — a 70-second
+  captioned walkthrough of every feature, recorded from the live demo
+  (regenerate with `node demo/record-visual-guide.mjs <outdir>` while the
+  demo server runs).
 - **Canvas course links**: enter your school's Canvas address in Options and
   every calendar event's popup gains an "Open in Canvas" link straight to that
   course's Canvas page (matched against your own Canvas course list, read via

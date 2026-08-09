@@ -122,6 +122,13 @@ describe('scrape cleanup (real Workday tenant junk)', () => {
     expect(cleanSectionTitle('CS 2110', 'CS 2110 - Intro | Hollister 110')).toBe('Intro');
     // credits glued onto the last word
     expect(cleanSectionTitle('SDS 4030', 'SDS 4030 - Statistics for DS II3')).toBe('Statistics for DS II');
+    // trailing "Actions" column text (row buttons scraped with the title)
+    expect(cleanSectionTitle('CS 2110', 'CS 2110 - Object-Oriented ProgrammingActions')).toBe(
+      'Object-Oriented Programming',
+    );
+    expect(cleanSectionTitle('CS 2110', 'CS 2110 - Object-Oriented Programming Actions')).toBe(
+      'Object-Oriented Programming',
+    );
   });
 
   it('courseLabel/courseTitle append the full name only when one is known', async () => {

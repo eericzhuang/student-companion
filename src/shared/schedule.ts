@@ -19,7 +19,7 @@ export function mergeSections(existing: Section[], incoming: Section[]): Section
  */
 export function cleanSectionTitle(courseCode: string, title: string): string {
   let s = title.trim();
-  s = s.split(/\s*\d*\s*(?:Quality|Graded(?:\s+Credit)?|Units?|Credits?|Registered|Waitlisted|Enrolled|Unregistered)\b/i)[0]!;
+  s = s.split(/\s*\d*\s*(?:Quality|Graded(?:\s+Credit)?|Units?|Credits?|Registered|Waitlisted|Enrolled|Unregistered|Actions?)\b/i)[0]!;
   // meeting times / pattern separators concatenated after the title
   s = s.split(/\s*\|\s*/)[0]!;
   s = s.split(/\s*\d{1,2}:\d{2}\s*(?:AM|PM)?/i)[0]!;
