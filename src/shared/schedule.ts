@@ -18,8 +18,9 @@ export function mergeSections(existing: Section[], incoming: Section[]): Section
  * Cut at the junk and drop a leading duplicated course code.
  */
 export function cleanSectionTitle(courseCode: string, title: string): string {
-  let s = title.trim();
-  s = s.split(/\s*\d*\s*(?:Quality|Graded(?:\s+Credit)?|Units?|Credits?|Registered|Waitlisted|Enrolled|Unregistered|Actions?)\b/i)[0]!;
+  const cutJunkWords = (t: string) =>
+    t.split(/\s*\d*\s*(?:Quality|Graded(?:\s+Credit)?|Units?|Credits?|Registered|Waitlisted|Enrolled|Unregistered|Actions?)\b/i)[0]!;
+  let s = cutJunkWords(title.trim());
   // meeting times / pattern separators concatenated after the title
   s = s.split(/\s*\|\s*/)[0]!;
   s = s.split(/\s*\d{1,2}:\d{2}\s*(?:AM|PM)?/i)[0]!;
@@ -28,6 +29,9 @@ export function cleanSectionTitle(courseCode: string, title: string): string {
   // rows often repeat the code as a section id ("CODE-01 - Title…Lec") — cut there
   const again = s.search(new RegExp(`${esc}(?:-\\w+)?\\s*[-–·:]`, 'i'));
   if (again > 0) s = s.slice(0, again);
+  // junk words glued straight to the repeated code ("…Actions" + "CSE 1302-01")
+  // have no word boundary until that cut removes the code — sweep again
+  s = cutJunkWords(s);
   // day abbreviations glued after the title once the time was cut ("…ProgrammingMWF")
   s = s.replace(/(?<=[a-z])(?:[MTWF]|Th|Tu|Sa|Su)+$/, '');
   // credit counts glued straight onto the last word ("…for DS II3")

@@ -9,7 +9,7 @@ import { evaluateDegree, normalizeCode, scopeReqOverrides, type CourseStates } f
 import { findOverlaps } from './engine/overlap';
 import { buildSchedulingPlan } from './engine/plan';
 import { suggestSchedule } from './engine/scheduleSuggest';
-import { courseLabel } from '../shared/schedule';
+import { courseLabel, courseTitle } from '../shared/schedule';
 
 interface Props {
   degrees: StoredDegree[];
@@ -191,7 +191,7 @@ export function PlannerBoard({ degrees, states, terms, plannerState, prereqOverr
                         📌
                       </button>
                     )}
-                    {c.title && <div class="pl-muted">{c.title}</div>}
+                    {courseTitle(c.code, c.title) && <div class="pl-muted">{courseTitle(c.code, c.title)}</div>}
                     {c.prereqCodes.length > 0 && (
                       <div class="pl-muted">req: {c.prereqCodes.join(', ')}</div>
                     )}

@@ -129,6 +129,14 @@ describe('scrape cleanup (real Workday tenant junk)', () => {
     expect(cleanSectionTitle('CS 2110', 'CS 2110 - Object-Oriented Programming Actions')).toBe(
       'Object-Oriented Programming',
     );
+    // "Actions" glued to the repeated section id — no word boundary until the
+    // section-id cut removes the code (real-tenant shape)
+    expect(
+      cleanSectionTitle(
+        'CSE 1302',
+        'CSE 1302 - Introduction to Computer EngineeringActionsCSE 1302-01 - Introduction to Computer EngineeringLec',
+      ),
+    ).toBe('Introduction to Computer Engineering');
   });
 
   it('courseLabel/courseTitle append the full name only when one is known', async () => {

@@ -4,6 +4,7 @@
  * all N" first, then each pair/subset.
  */
 import type { StoredDegree } from '../shared/types';
+import { courseTitle } from '../shared/schedule';
 import { findOverlaps, groupOverlapsByCombo, type OverlapEntry } from './engine/overlap';
 import { stateOf, type CourseStates } from './engine/requirements';
 
@@ -34,7 +35,7 @@ function OverlapTable({ entries, degrees, states }: { entries: OverlapEntry[]; d
           <tr>
             <td>
               ⭐ <b>{o.code}</b>
-              {o.title ? ` — ${o.title}` : ''}
+              {courseTitle(o.code, o.title) ? ` — ${courseTitle(o.code, o.title)}` : ''}
               {o.credits !== null ? ` (${o.credits} cr)` : ''}
             </td>
             <td>{STATE_LABEL[stateOf(o.code, states)]}</td>

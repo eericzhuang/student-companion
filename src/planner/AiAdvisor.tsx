@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { PlannerState, ReqOverrideValue, StoredDegree, TermConfig } from '../shared/types';
 import { sendToBackground, type ChatResult } from '../background/messages';
 import { buildSchedulingPlan } from './engine/plan';
+import { courseTitle } from '../shared/schedule';
 import { evaluateDegree, normalizeCode, scopeReqOverrides, stateOf, type CourseStates } from './engine/requirements';
 import { aiLaneFullMessage, aiLaneOpen, enterAiLane, leaveAiLane } from './aiLock';
 
@@ -70,7 +71,7 @@ function buildContext(props: Props): string {
   for (const c of plan.required) {
     const pre = c.prereqCodes.length ? ` [needs: ${c.prereqCodes.join(', ')}]` : '';
     const multi = (plan.requirementCount.get(normalizeCode(c.code)) ?? 1) > 1 ? ' (multi-requirement)' : '';
-    lines.push(`- ${c.code}${c.title ? ` — ${c.title}` : ''}${pre}${multi}`);
+    lines.push(`- ${c.code}${courseTitle(c.code, c.title) ? ` — ${courseTitle(c.code, c.title)}` : ''}${pre}${multi}`);
   }
   for (const e of plan.electives) {
     lines.push(`Elective: ${e.degreeName} · ${e.groupTitle}: choose ${e.needed} from ${[...e.picked, ...e.options].map((c) => c.code).join(', ')}`);
