@@ -10,7 +10,21 @@
  */
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const KEY = process.env.STRIPE_SECRET_KEY || '';
+if (!KEY) {
+  console.error('No STRIPE_SECRET_KEY set (check .env or the environment).');
+  process.exit(1);
+}
+// Test and live are separate namespaces — running this against the wrong one
+// silently no-ops, so say which one out loud before touching anything.
+const LIVE = /_live_/.test(KEY);
+console.log(
+  LIVE
+    ? '\x1b[1mStripe mode: LIVE\x1b[0m — these are the products real customers will buy.\n'
+    : 'Stripe mode: TEST — sandbox data only, no real charges.\n',
+);
+
+const stripe = new Stripe(KEY);
 
 /**
  * Pricing rationale (managed AI relay — subscribers use OUR API key):

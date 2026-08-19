@@ -5,11 +5,14 @@
   "type": "module",
   "description": "Billing backend for Student Companion for Workday: Stripe Checkout + subscription verification",
   "scripts": {
-    "setup": "node --env-file=.env setup-products.js",
-    "start": "node --env-file=.env index.js"
+    "setup": "node --env-file-if-exists=.env setup-products.js",
+    "start": "node --env-file-if-exists=.env index.js"
   },
   "dependencies": {
     "express": "^4.21.2",
     "stripe": "^17.7.0"
+  },
+  "engines": {
+    "node": ">=22.9"
   }
 }
