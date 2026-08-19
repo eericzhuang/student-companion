@@ -8,6 +8,10 @@ All notable user-facing changes to the extension.
   card with how many days remain before the next charge, and cancels (or
   resumes) in one click. Cancelling keeps every paid feature until the period
   you already paid for runs out, and can be undone until then.
+- **No accidental paid-but-locked-out state**: with billing on, "Downgrade to
+  Free" and "Switch down to Pro" used to change the plan only on this device
+  while Stripe kept charging. They now route to the cancel flow instead; owner
+  unlock and free-beta installs keep the old local switching.
 - **Real billing is live**: Stripe Checkout is wired to the deployed billing
   server, so Pro and Supreme are purchasable.
 

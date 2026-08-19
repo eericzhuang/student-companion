@@ -50,16 +50,19 @@ const MATRIX: Array<{ feature: string; free: boolean; pro: boolean; supreme: boo
 function App() {
   const [plan, setPlan] = useState<Settings['plan']>('free');
   const [admin, setAdmin] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     void getStored('settings').then((s) => {
       setPlan(s.plan);
       setAdmin(s.admin);
+      setToken(s.licenseToken ?? null);
     });
     return onStoredChange('settings', (s) => {
       setPlan(s.plan);
       setAdmin(s.admin);
+      setToken(s.licenseToken ?? null);
     });
   }, []);
 
@@ -154,6 +157,18 @@ function App() {
 
   const pro = isPro({ plan, admin });
   const supreme = plan === 'supreme' || admin;
+  /**
+   * A real Stripe subscription is behind this device (owner unlock isn't one).
+   * Read from the stored token, not the status request, so the plan buttons are
+   * never briefly wrong while the billing host cold-starts — switching plans
+   * locally while Stripe keeps charging is the one mistake we must not allow.
+   */
+  const paidSub = billing && token !== null && !token.startsWith('adm_');
+
+  const goManage = (openCancel: boolean) => {
+    setConfirmCancel(openCancel);
+    document.querySelector('.sub-manage')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
   return (
     <div class="sub-shell">
@@ -191,7 +206,11 @@ function App() {
             <li><span class="sub-check">✓</span> Transcript &amp; degree import via <b>rule-based</b> parsing</li>
             <li><span class="sub-x">✕</span> <span class="sub-muted">AI parsing &amp; the AI advisor (Pro only)</span></li>
           </ul>
-          {pro ? (
+          {pro && paidSub ? (
+            <button class="sub-btn danger" onClick={() => goManage(true)}>
+              Cancel subscription
+            </button>
+          ) : pro ? (
             <button class="sub-btn danger" onClick={() => void setPlanValue('free', 'Switched to Free.')}>
               Downgrade to Free
             </button>
@@ -226,7 +245,15 @@ function App() {
             <li><span class="sub-check">✓</span> Everything in Free, plus no API key to manage</li>
             <li><span class="sub-x">✕</span> <span class="sub-muted">Auto-find degree requirements &amp; prerequisites (Supreme)</span></li>
           </ul>
-          {supreme ? (
+          {supreme && paidSub ? (
+            <button
+              class="sub-btn ghost"
+              title="Your tier follows your Stripe subscription — cancel it to move down to Pro."
+              onClick={() => goManage(false)}
+            >
+              Manage subscription
+            </button>
+          ) : supreme ? (
             <button
               class="sub-btn ghost"
               onClick={() => void setPlanValue('pro', 'Switched to Pro.')}
