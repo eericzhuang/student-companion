@@ -38,6 +38,16 @@ max_tokens cap, no streaming), then forwards to `api.anthropic.com` and
 returns the response verbatim. Errors use Anthropic's `{error:{message}}`
 shape so the extension shows them as-is.
 
+## Subscription management
+
+- `POST /license {token}` → `{active, plan, status, renewsAt, cancelAtPeriodEnd}`.
+  `renewsAt` is Stripe epoch **seconds** (the extension renders days left from it).
+- `POST /subscription/cancel {token}` / `POST /subscription/resume {token}` →
+  same shape. Cancelling sets `cancel_at_period_end`, so the user keeps the
+  access they paid for until the period ends and can undo it until then; no
+  proration and no mid-period lockout. Owner/admin tokens are rejected (there is
+  no subscription behind them).
+
 ## Flow
 
 1. Extension subscribe page → `POST /checkout {plan, interval}` → opens the

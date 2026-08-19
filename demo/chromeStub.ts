@@ -46,6 +46,30 @@ const chromeStub = {
         case 'SETTINGS_UPDATE':
           write('settings', { ...(store.settings as object), ...(req.patch as object) });
           return { ok: true };
+        // Demo billing: a Pro subscription with ~12 days left that can be
+        // cancelled and resumed, so the subscription card is explorable.
+        case 'LICENSE_STATUS':
+          return {
+            ok: true,
+            data: store.licenseStatus ?? {
+              active: true,
+              plan: 'pro',
+              status: 'active',
+              renewsAt: Math.floor((Date.now() + 12 * 86_400_000) / 1000),
+              cancelAtPeriodEnd: false,
+            },
+          };
+        case 'LICENSE_SET_CANCEL': {
+          const prev = (store.licenseStatus as Record<string, unknown> | null) ?? {
+            active: true,
+            plan: 'pro',
+            status: 'active',
+            renewsAt: Math.floor((Date.now() + 12 * 86_400_000) / 1000),
+          };
+          const next = { ...prev, cancelAtPeriodEnd: req.cancel as boolean };
+          write('licenseStatus', next);
+          return { ok: true, data: next };
+        }
         case 'OPEN_SUBSCRIBE':
           window.location.href = '/subscribe.html';
           return { ok: true };

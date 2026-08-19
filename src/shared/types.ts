@@ -1,4 +1,5 @@
 /** Core data model shared across background, content, options, and planner contexts. */
+import type { LicenseStatus } from './billing';
 
 /** Day-of-week bitmask: Mon=1, Tue=2, Wed=4, Thu=8, Fri=16, Sat=32, Sun=64 */
 export type DayMask = number;
@@ -331,6 +332,11 @@ export interface StorageShape {
   scenarios: Scenario[];
   /** cached Canvas course list (id + code + name only), for event → course links */
   canvasCourses: CanvasCourseCache | null;
+  /**
+   * Last verified subscription status, so the upgrade page can show days left
+   * without waiting on the billing server (which may be cold-starting).
+   */
+  licenseStatus: LicenseStatus | null;
 }
 
 /**
@@ -356,4 +362,5 @@ export const STORAGE_DEFAULTS: StorageShape = {
   campusMap: { school: null, buildings: {} },
   scenarios: [],
   canvasCourses: null,
+  licenseStatus: null,
 };

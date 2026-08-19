@@ -19,6 +19,22 @@ import { isAdminToken, mountRelay } from './relay.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const BASE_URL = process.env.BASE_URL || 'http://localhost:8787';
+
+/**
+ * Public origin to send Stripe redirects to. A host that forgets BASE_URL used
+ * to strand paying customers on http://localhost:8787/activated — where their
+ * activation code is unreachable — so trust the request's own host unless
+ * BASE_URL names a real (non-local) origin.
+ */
+function publicBase(req) {
+  const configured = BASE_URL.replace(/\/+$/, '');
+  if (configured && !/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:|$)/.test(configured)) {
+    return configured;
+  }
+  const proto = String(req.get('x-forwarded-proto') || req.protocol || 'http').split(',')[0].trim();
+  const host = req.get('x-forwarded-host') || req.get('host');
+  return host ? `${proto}://${host}` : configured;
+}
 const PORT = Number(process.env.PORT || 8787);
 
 /** plan+interval -> price lookup_key (created by setup-products.js) */
@@ -58,8 +74,8 @@ app.post('/checkout', async (req, res) => {
       mode: 'subscription',
       line_items: [{ price: price.id, quantity: 1 }],
       allow_promotion_codes: true,
-      success_url: `${BASE_URL}/activated?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${BASE_URL}/cancelled`,
+      success_url: `${publicBase(req)}/activated?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${publicBase(req)}/cancelled`,
     });
     res.json({ url: session.url });
   } catch (e) {
@@ -80,6 +96,23 @@ async function resolveSubscription(token) {
   return null;
 }
 
+/** The status shape the extension renders: plan, period end, pending cancel. */
+function licensePayload(sub) {
+  const key = sub.items?.data?.[0]?.price?.lookup_key ?? '';
+  const plan = KEY_TO_PLAN[key] ?? 'pro';
+  // 'trialing' and 'past_due' still grant access; canceled/unpaid do not.
+  const active = ['active', 'trialing', 'past_due'].includes(sub.status);
+  return {
+    active,
+    plan: active ? plan : 'free',
+    status: sub.status,
+    // Stripe epoch SECONDS. Newer API versions moved the period onto the item.
+    renewsAt: sub.items?.data?.[0]?.current_period_end ?? sub.current_period_end ?? null,
+    // Cancelled-but-paid-through: access continues until renewsAt, then stops.
+    cancelAtPeriodEnd: sub.cancel_at_period_end === true,
+  };
+}
+
 // POST with the token in the body — a bearer-style credential in a GET query
 // string would end up in hosting/proxy access logs.
 app.post('/license', async (req, res) => {
@@ -92,21 +125,40 @@ app.post('/license', async (req, res) => {
     }
     const sub = await resolveSubscription(token).catch(() => null);
     if (!sub) return res.json({ active: false, plan: 'free', status: 'not-found' });
-    const key = sub.items?.data?.[0]?.price?.lookup_key ?? '';
-    const plan = KEY_TO_PLAN[key] ?? 'pro';
-    // 'trialing' and 'past_due' still grant access; canceled/unpaid do not.
-    const active = ['active', 'trialing', 'past_due'].includes(sub.status);
-    res.json({
-      active,
-      plan: active ? plan : 'free',
-      status: sub.status,
-      renewsAt: sub.items?.data?.[0]?.current_period_end ?? sub.current_period_end ?? null,
-    });
+    res.json(licensePayload(sub));
   } catch (e) {
     console.error('license check failed', e);
     res.status(500).json({ error: 'License check failed. Try again in a minute.' });
   }
 });
+
+/**
+ * Self-serve cancel / resume. Cancelling sets cancel_at_period_end so the user
+ * keeps the access they already paid for until the period ends — no proration,
+ * no surprise mid-month lockout — and can undo it any time before then.
+ */
+async function setCancelAtPeriodEnd(req, res, cancel) {
+  try {
+    const token = String(req.body?.token ?? '');
+    if (!token) return res.status(400).json({ error: 'Missing token.' });
+    if (isAdminToken(token)) {
+      return res.status(400).json({ error: 'Owner unlock has no subscription to cancel.' });
+    }
+    const sub = await resolveSubscription(token).catch(() => null);
+    if (!sub) return res.status(404).json({ error: 'No subscription found for that code.' });
+    if (sub.status === 'canceled') {
+      return res.status(409).json({ error: 'That subscription is already fully cancelled.' });
+    }
+    const updated = await stripe.subscriptions.update(sub.id, { cancel_at_period_end: cancel });
+    res.json(licensePayload(updated));
+  } catch (e) {
+    console.error(cancel ? 'cancel failed' : 'resume failed', e);
+    res.status(500).json({ error: 'Could not update the subscription. Try again in a minute.' });
+  }
+}
+
+app.post('/subscription/cancel', (req, res) => setCancelAtPeriodEnd(req, res, true));
+app.post('/subscription/resume', (req, res) => setCancelAtPeriodEnd(req, res, false));
 
 const page = (title, body) => `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
 <style>body{font-family:system-ui;max-width:560px;margin:60px auto;padding:0 20px;color:#1f2937}

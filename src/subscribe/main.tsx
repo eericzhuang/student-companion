@@ -10,7 +10,12 @@ import type { Settings } from '../shared/types';
 import { getStored, onStoredChange } from '../shared/storage';
 import { isPro } from '../shared/plan';
 import { sendToBackground } from '../background/messages';
-import { BILLING_API_URL, billingEnabled, type LicenseStatus } from '../shared/billing';
+import {
+  BILLING_API_URL,
+  billingEnabled,
+  summarizeSubscription,
+  type LicenseStatus,
+} from '../shared/billing';
 
 // Pricing (managed AI relay — AI is included, subscribers never need a key):
 // each plan carries a monthly AI allowance (Pro ~$3, Supreme ~$7 of API cost,
@@ -61,7 +66,40 @@ function App() {
   const [busy, setBusy] = useState<string | null>(null);
   const [activationCode, setActivationCode] = useState('');
   const [activationError, setActivationError] = useState<string | null>(null);
+  const [license, setLicense] = useState<LicenseStatus | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [manageError, setManageError] = useState<string | null>(null);
   const billing = billingEnabled();
+
+  // Show the cached status instantly, then refresh from Stripe — the billing
+  // host may be cold-starting, and days-left shouldn't wait on that.
+  useEffect(() => {
+    if (!billingEnabled()) return;
+    void getStored('licenseStatus').then((cached) => cached && setLicense(cached));
+    void sendToBackground<LicenseStatus | null>({ kind: 'LICENSE_STATUS' })
+      .then((live) => live && setLicense(live))
+      .catch(() => {});
+  }, []);
+
+  const setCancel = async (cancel: boolean) => {
+    setBusy(cancel ? 'cancel' : 'resume');
+    setManageError(null);
+    try {
+      const next = await sendToBackground<LicenseStatus>({ kind: 'LICENSE_SET_CANCEL', cancel });
+      setLicense(next);
+      setConfirmCancel(false);
+      setToast(
+        cancel
+          ? 'Subscription cancelled — you keep everything until the date below.'
+          : 'Subscription resumed — it will renew as normal.',
+      );
+      setTimeout(() => setToast(null), 5000);
+    } catch (err) {
+      setManageError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const setPlanValue = async (next: Settings['plan'], message: string) => {
     // Dropping the plan also drops the license token, so the daily re-check
@@ -104,6 +142,7 @@ function App() {
         code: activationCode,
       });
       setActivationCode('');
+      setLicense(license);
       setToast(`🎉 ${license.plan === 'supreme' ? 'Supreme' : 'Pro'} activated — thank you!`);
       setTimeout(() => setToast(null), 4000);
     } catch (err) {
@@ -295,6 +334,18 @@ function App() {
         </div>
       </div>
 
+      {billing && license && license.status !== 'admin' && (
+        <SubscriptionCard
+          license={license}
+          busy={busy}
+          error={manageError}
+          confirming={confirmCancel}
+          onConfirm={() => setConfirmCancel(true)}
+          onDismiss={() => setConfirmCancel(false)}
+          onSetCancel={(c) => void setCancel(c)}
+        />
+      )}
+
       {billing ? (
         <div class="sub-note">
           <b>Already paid?</b> Paste the activation code from the post-checkout page (it starts
@@ -314,8 +365,8 @@ function App() {
           </div>
           {activationError && <div style={{ color: '#b91c1c', marginTop: '6px', fontSize: '13px' }}>{activationError}</div>}
           <p style={{ margin: '8px 0 0', fontSize: '12px', color: '#6b7280' }}>
-            Payments are processed securely by Stripe — the extension never sees your card. Your
-            subscription is re-verified automatically; cancel anytime from your Stripe receipt email.
+            Payments are processed securely by Stripe — the extension never sees your card. Once
+            activated, the card above shows how long you have left and cancels in one click.
           </p>
         </div>
       ) : (
@@ -366,6 +417,70 @@ function App() {
       </div>
 
       {toast && <div class="sub-toast">{toast}</div>}
+    </div>
+  );
+}
+
+
+/** Days left + self-serve cancel/resume for an active paid subscription. */
+function SubscriptionCard({
+  license,
+  busy,
+  error,
+  confirming,
+  onConfirm,
+  onDismiss,
+  onSetCancel,
+}: {
+  license: LicenseStatus;
+  busy: string | null;
+  error: string | null;
+  confirming: boolean;
+  onConfirm: () => void;
+  onDismiss: () => void;
+  onSetCancel: (cancel: boolean) => void;
+}) {
+  const summary = summarizeSubscription(license);
+  const tier = license.plan === 'supreme' ? 'Supreme 👑' : 'Pro';
+  return (
+    <div class={`sub-manage${summary.ending ? ' ending' : ''}`}>
+      <div class="sub-manage-head">
+        <h3>Your subscription</h3>
+        <span class="sub-manage-tier">{tier}</span>
+      </div>
+      <div class="sub-manage-body">
+        <div>
+          <div class="sub-manage-headline">{summary.headline}</div>
+          <div class="sub-manage-detail">{summary.detail}</div>
+        </div>
+        <div class="sub-manage-actions">
+          {summary.ending ? (
+            <button class="sub-btn primary" disabled={busy !== null} onClick={() => onSetCancel(false)}>
+              {busy === 'resume' ? 'Resuming…' : 'Resume subscription'}
+            </button>
+          ) : confirming ? (
+            <>
+              <button class="sub-btn danger" disabled={busy !== null} onClick={() => onSetCancel(true)}>
+                {busy === 'cancel' ? 'Cancelling…' : 'Yes, cancel'}
+              </button>
+              <button class="sub-btn ghost" disabled={busy !== null} onClick={onDismiss}>
+                Keep it
+              </button>
+            </>
+          ) : (
+            <button class="sub-btn ghost" onClick={onConfirm}>
+              Cancel subscription
+            </button>
+          )}
+        </div>
+      </div>
+      {confirming && !summary.ending && (
+        <p class="sub-manage-warn">
+          You'll keep every paid feature until the date above — nothing is lost today, and you can
+          resume any time before then. No refund is issued for the current period.
+        </p>
+      )}
+      {error && <div class="sub-manage-error">{error}</div>}
     </div>
   );
 }

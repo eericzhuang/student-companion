@@ -63,6 +63,8 @@ export type ExtRequest =
   | { kind: 'AI_TEST' }
   // --- billing (only when a billing backend is configured) ---
   | { kind: 'LICENSE_ACTIVATE'; code: string }
+  | { kind: 'LICENSE_STATUS' }
+  | { kind: 'LICENSE_SET_CANCEL'; cancel: boolean }
   | { kind: 'AI_HISTORY_CLEAR' }
   | { kind: 'AI_HISTORY_REMOVE'; ids: string[] }
   // --- Canvas LMS link (from content UI) ---

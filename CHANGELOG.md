@@ -4,6 +4,13 @@ All notable user-facing changes to the extension.
 
 ## Unreleased
 
+- **Subscription management**: the Upgrade page now shows a "Your subscription"
+  card with how many days remain before the next charge, and cancels (or
+  resumes) in one click. Cancelling keeps every paid feature until the period
+  you already paid for runs out, and can be undone until then.
+- **Real billing is live**: Stripe Checkout is wired to the deployed billing
+  server, so Pro and Supreme are purchasable.
+
 - **Cleaner course names**: trailing "Actions" column text from Workday rows
   is stripped from captured titles.
 - **Visual guide video**: `store-assets/visual-guide.mp4` — a 70-second

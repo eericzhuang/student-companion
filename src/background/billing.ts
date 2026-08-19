@@ -5,7 +5,7 @@
  * to the live subscription, so cancellations propagate on the daily re-check.
  */
 import { BILLING_API_URL, billingEnabled, type LicenseStatus } from '../shared/billing';
-import { getStored, updateStored } from '../shared/storage';
+import { getStored, setStored, updateStored } from '../shared/storage';
 
 async function fetchLicense(token: string): Promise<LicenseStatus> {
   // POST body, not a query param — tokens in URLs land in server access logs.
@@ -28,6 +28,7 @@ export async function activateLicense(code: string): Promise<LicenseStatus> {
     throw new Error('That doesn\'t look like an activation code — it starts with "cs_" and is shown right after checkout.');
   }
   const license = await fetchLicense(token);
+  await setStored('licenseStatus', license);
   if (!license.active) {
     throw new Error(
       license.status === 'not-found'
@@ -54,8 +55,45 @@ export async function refreshLicense(): Promise<void> {
   } catch {
     return;
   }
+  await setStored('licenseStatus', license);
   const nextPlan = license.active ? license.plan : 'free';
   if (nextPlan !== settings.plan) {
     await updateStored('settings', (s) => ({ ...s, plan: nextPlan }));
   }
+}
+
+/** Live status for the upgrade page (also refreshes the cached snapshot). */
+export async function licenseStatus(): Promise<LicenseStatus | null> {
+  if (!billingEnabled()) return null;
+  const settings = await getStored('settings');
+  if (!settings.licenseToken) return null;
+  const license = await fetchLicense(settings.licenseToken);
+  await setStored('licenseStatus', license);
+  if (!license.active && settings.plan !== 'free') {
+    await updateStored('settings', (s) => ({ ...s, plan: 'free' }));
+  }
+  return license;
+}
+
+/**
+ * Cancel at period end (or undo that). Access is unchanged until the paid
+ * period runs out — the daily re-check drops the plan once Stripe reports the
+ * subscription as canceled.
+ */
+export async function setSubscriptionCancel(cancel: boolean): Promise<LicenseStatus> {
+  const settings = await getStored('settings');
+  if (!settings.licenseToken) {
+    throw new Error('No subscription is linked to this device.');
+  }
+  const res = await fetch(`${BILLING_API_URL}/subscription/${cancel ? 'cancel' : 'resume'}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: settings.licenseToken }),
+  });
+  const data = (await res.json().catch(() => ({}))) as LicenseStatus & { error?: string };
+  if (!res.ok) {
+    throw new Error(data.error ?? 'Could not update the subscription — try again in a minute.');
+  }
+  await setStored('licenseStatus', data);
+  return data;
 }

@@ -26,7 +26,7 @@ import {
 } from './map';
 import { canvasLookup } from './canvas';
 import { handleRegistrationAlarm, REG_ALARM_PREFIX, syncRegistrationAlarms } from './reminders';
-import { activateLicense, refreshLicense } from './billing';
+import { activateLicense, licenseStatus, refreshLicense, setSubscriptionCancel } from './billing';
 import { parseTranscriptText } from '../shared/transcript';
 import { aiCallStatus, isSupreme } from '../shared/plan';
 import { STORAGE_DEFAULTS } from '../shared/types';
@@ -339,6 +339,10 @@ async function handle(req: ExtRequest, trusted: boolean): Promise<unknown> {
       return testAiConnection();
     case 'LICENSE_ACTIVATE':
       return activateLicense(req.code);
+    case 'LICENSE_STATUS':
+      return licenseStatus();
+    case 'LICENSE_SET_CANCEL':
+      return setSubscriptionCancel(req.cancel);
     case 'AI_HISTORY_CLEAR':
       await setStored('aiHistory', []);
       return null;
