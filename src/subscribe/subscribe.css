@@ -449,3 +449,56 @@ body {
 }
 .sub-manage.ending .sub-manage-warn { background: #fff; }
 .sub-manage-error { margin-top: 10px; color: #b91c1c; font-size: 13px; }
+
+/* ---------- Monthly / yearly toggle ---------- */
+
+.sub-interval {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin: 4px auto 18px;
+  padding: 4px;
+  background: #e8eef5;
+  border-radius: 999px;
+  width: fit-content;
+}
+.sub-interval-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 8px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.sub-interval-btn:hover { color: #0f172a; }
+.sub-interval-btn.active {
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.16);
+}
+.sub-interval-save {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+}
+.sub-price-switch {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: #0f4c81;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.sub-price-switch:hover { color: #0d3e6b; }

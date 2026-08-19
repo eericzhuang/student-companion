@@ -28,6 +28,20 @@ const YEARLY = '$69';
 const SUPREME_PRICE = '$14.99';
 const SUPREME_YEARLY = '$149';
 
+type Interval = 'month' | 'year';
+
+/** Displayed price per plan and billing interval. Yearly ≈ 2 months free. */
+const PRICING: Record<'pro' | 'supreme', Record<Interval, { amount: string; per: string; perMonth: string }>> = {
+  pro: {
+    month: { amount: PRICE, per: '/ month', perMonth: PRICE },
+    year: { amount: YEARLY, per: '/ year', perMonth: '$5.75' },
+  },
+  supreme: {
+    month: { amount: SUPREME_PRICE, per: '/ month', perMonth: SUPREME_PRICE },
+    year: { amount: SUPREME_YEARLY, per: '/ year', perMonth: '$12.42' },
+  },
+};
+
 /** Feature-access matrix: exactly which plan unlocks which function. */
 const MATRIX: Array<{ feature: string; free: boolean; pro: boolean; supreme: boolean }> = [
   { feature: '📅 Live schedule calendar + conflict detection', free: true, pro: true, supreme: true },
@@ -70,6 +84,7 @@ function App() {
   const [activationCode, setActivationCode] = useState('');
   const [activationError, setActivationError] = useState<string | null>(null);
   const [license, setLicense] = useState<LicenseStatus | null>(null);
+  const [billingInterval, setBillingInterval] = useState<Interval>('month');
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [manageError, setManageError] = useState<string | null>(null);
   const billing = billingEnabled();
@@ -122,7 +137,7 @@ function App() {
       const res = await fetch(`${BILLING_API_URL}/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: planKey, interval: 'month' }),
+        body: JSON.stringify({ plan: planKey, interval: billingInterval }),
       });
       const data = (await res.json()) as { url?: string; error?: string };
       if (!res.ok || !data.url) throw new Error(data.error ?? 'Could not start checkout.');
@@ -186,6 +201,25 @@ function App() {
         </div>
       </div>
 
+      {billing && (
+        <div class="sub-interval" role="group" aria-label="Billing interval">
+          <button
+            class={`sub-interval-btn${billingInterval === 'month' ? ' active' : ''}`}
+            aria-pressed={billingInterval === 'month'}
+            onClick={() => setBillingInterval('month')}
+          >
+            Monthly
+          </button>
+          <button
+            class={`sub-interval-btn${billingInterval === 'year' ? ' active' : ''}`}
+            aria-pressed={billingInterval === 'year'}
+            onClick={() => setBillingInterval('year')}
+          >
+            Yearly <span class="sub-interval-save">2 months free</span>
+          </button>
+        </div>
+      )}
+
       <div class="sub-plans">
         {/* FREE */}
         <div class="sub-card free">
@@ -227,14 +261,22 @@ function App() {
           <h2>Pro</h2>
           <div class="sub-tagline">AI does the tedious parts for you.</div>
           <div class="sub-price">
-            <span class="amt">{PRICE}</span>
-            <span class="per">/ month</span>
+            <span class="amt">{billing ? PRICING.pro[billingInterval].amount : PRICE}</span>
+            <span class="per">{billing ? PRICING.pro[billingInterval].per : '/ month'}</span>
           </div>
           <div class="sub-price-note">
-            {billing ? (
-              <>Cancel anytime. Or {YEARLY}/year — 2 months free.</>
-            ) : (
+            {!billing ? (
               <><b>Free during the beta.</b> Planned launch price — or {YEARLY}/year (2 months free).</>
+            ) : billingInterval === 'year' ? (
+              <>Cancel anytime. ≈{PRICING.pro.year.perMonth}/mo, billed once a year.</>
+            ) : (
+              <>
+                Cancel anytime. Or{' '}
+                <button class="sub-price-switch" onClick={() => setBillingInterval('year')}>
+                  {YEARLY}/year — 2 months free
+                </button>
+                .
+              </>
             )}
           </div>
           <ul class="sub-features">
@@ -274,7 +316,11 @@ function App() {
                   : void setPlanValue('pro', '🎉 Pro unlocked — free during the beta.')
               }
             >
-              {billing ? (busy === 'pro' ? 'Opening checkout…' : `Start Pro — ${PRICE}/mo`) : 'Try Pro free (beta)'}
+              {billing
+                ? busy === 'pro'
+                  ? 'Opening checkout…'
+                  : `Start Pro — ${PRICING.pro[billingInterval].amount}/${billingInterval === 'year' ? 'yr' : 'mo'}`
+                : 'Try Pro free (beta)'}
             </button>
           )}
         </div>
@@ -293,14 +339,22 @@ function App() {
           <h2>Supreme</h2>
           <div class="sub-tagline">The AI researches your degree for you.</div>
           <div class="sub-price">
-            <span class="amt">{SUPREME_PRICE}</span>
-            <span class="per">/ month</span>
+            <span class="amt">{billing ? PRICING.supreme[billingInterval].amount : SUPREME_PRICE}</span>
+            <span class="per">{billing ? PRICING.supreme[billingInterval].per : '/ month'}</span>
           </div>
           <div class="sub-price-note">
-            {billing ? (
-              <>Cancel anytime. Or {SUPREME_YEARLY}/year — 2 months free.</>
-            ) : (
+            {!billing ? (
               <><b>Free during the beta.</b> Planned launch price — or {SUPREME_YEARLY}/year (2 months free).</>
+            ) : billingInterval === 'year' ? (
+              <>Cancel anytime. ≈{PRICING.supreme.year.perMonth}/mo, billed once a year.</>
+            ) : (
+              <>
+                Cancel anytime. Or{' '}
+                <button class="sub-price-switch" onClick={() => setBillingInterval('year')}>
+                  {SUPREME_YEARLY}/year — 2 months free
+                </button>
+                .
+              </>
             )}
           </div>
           <ul class="sub-features">
@@ -327,7 +381,7 @@ function App() {
               {billing
                 ? busy === 'supreme'
                   ? 'Opening checkout…'
-                  : `Start Supreme — ${SUPREME_PRICE}/mo`
+                  : `Start Supreme — ${PRICING.supreme[billingInterval].amount}/${billingInterval === 'year' ? 'yr' : 'mo'}`
                 : 'Try Supreme free (beta)'}
             </button>
           )}

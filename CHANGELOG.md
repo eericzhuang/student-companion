@@ -8,6 +8,11 @@ All notable user-facing changes to the extension.
   card with how many days remain before the next charge, and cancels (or
   resumes) in one click. Cancelling keeps every paid feature until the period
   you already paid for runs out, and can be undone until then.
+- **Yearly plans are purchasable**: the Upgrade page gained a Monthly/Yearly
+  toggle. Yearly was advertised ($69 Pro, $149 Supreme — 2 months free) but
+  checkout always requested a monthly subscription, so there was no way to buy
+  it. Prices, per-month equivalents, and the checkout call now follow the
+  toggle.
 - **No accidental paid-but-locked-out state**: with billing on, "Downgrade to
   Free" and "Switch down to Pro" used to change the plan only on this device
   while Stripe kept charging. They now route to the cancel flow instead; owner
