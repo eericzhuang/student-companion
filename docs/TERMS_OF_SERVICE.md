@@ -40,9 +40,10 @@ spending limit. The key is stored only on your device.
 
 - Paid plans (Pro, Supreme) are recurring subscriptions billed through
   **Stripe**. Prices are shown on the upgrade page before you pay.
-- **Cancel anytime** from the Stripe-hosted portal or by contacting support;
-  cancellation stops future renewals and your plan stays active until the end
-  of the period already paid.
+- **Cancel anytime** from the extension's Upgrade page — it shows how many days
+  remain and cancels in one click (or email support). Cancelling stops future
+  renewals and your plan stays active until the end of the period already paid;
+  you can resume before then.
 - **Refunds:** if the paid features don't work for your school's Workday
   tenant, email support within **14 days** of a charge and we'll refund it.
   Other refund requests are handled case-by-case within the limits of consumer
