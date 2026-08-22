@@ -4,6 +4,11 @@ All notable user-facing changes to the extension.
 
 ## Unreleased
 
+- **No more console warnings**: the build no longer emits `modulepreload`
+  hints, which Chrome logged for every planner asset as a "cross-world
+  extension resource mismatch" (harmless, but it filled the extension's Errors
+  panel). Preloading gains nothing for files already on disk.
+
 - **More accurate academic history**: grades and credits are now read from the
   grid's own columns instead of "the first cell that looks like one", so a
   Grading Basis of "S" is no longer mistaken for a grade and a Grade Points
