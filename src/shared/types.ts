@@ -211,6 +211,7 @@ export interface Settings {
    *  Only honored when admin is true — progress numbers always stay real. */
   themeLevel?: number;
   /** walking speed for between-class route warnings, km/h (default 4.8) */
+  /** @deprecated no longer configurable — walk estimates use DEFAULT_WALK_KMH */
   walkSpeedKmh?: number;
   /** color scheme: follow the system (default), or force light/dark */
   appearance?: 'auto' | 'light' | 'dark';

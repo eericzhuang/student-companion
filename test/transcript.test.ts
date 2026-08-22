@@ -46,3 +46,31 @@ Term GPA: 3.7
     expect(parseTranscriptText('This document has no course codes at all.')).toEqual([]);
   });
 });
+
+describe('parseTranscriptText — accuracy traps', () => {
+  it('a section suffix is not a 1-credit course', () => {
+    const c = parseTranscriptText('Fall 2024\nCSE 1302-01 Introduction to Computer Engineering 3.0 A')[0]!;
+    expect(c.credits).toBe(3);
+    expect(c.grade).toBe('A');
+  });
+
+  it('a Roman numeral in the title is not an Incomplete grade', () => {
+    const c = parseTranscriptText('Fall 2025\nPHYS 1112 Physics I Mechanics 4.0')[0]!;
+    expect(c.grade).toBeNull();
+    expect(c.status).toBe('in-progress');
+  });
+
+  it('still reads a real trailing P or S grade', () => {
+    expect(parseTranscriptText('Fall 2024\nPE 1100 Swimming 1.0 P')[0]!.grade).toBe('P');
+    expect(parseTranscriptText('Fall 2024\nRES 2000 Research 2.0 S')[0]!.status).toBe('completed');
+  });
+
+  it('rejects implausible credit values', () => {
+    // "16.0" here is a term total, not a course credit
+    expect(parseTranscriptText('Fall 2024\nCS 1110 Intro 16.0 A')[0]!.credits).toBeNull();
+  });
+
+  it('transfer credit counts as completed', () => {
+    expect(parseTranscriptText('Transfer Credit\nMATH 1910 Calculus 4.0 TR')[0]!.status).toBe('completed');
+  });
+});

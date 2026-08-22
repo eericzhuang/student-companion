@@ -62,7 +62,9 @@ export function CalendarPanel() {
   const [collapsed, setCollapsed] = useState(false);
   const [pro, setPro] = useState(false);
   const [campusMap, setCampusMapState] = useState<CampusMap | null>(null);
-  const [walkSpeed, setWalkSpeed] = useState(DEFAULT_WALK_KMH);
+  // Walk estimates always use the standard pace (DEFAULT_WALK_KMH) — one less
+  // knob to get wrong, and the 1.3x detour factor dominates the difference.
+  const walkSpeed = DEFAULT_WALK_KMH;
   const [selEvent, setSelEvent] = useState<{ section: Section; meeting: Meeting } | null>(null);
   // Stretch the grid with the panel: a taller panel zooms the blocks so they
   // can show room, professor, and rating inline.
@@ -82,7 +84,6 @@ export function CalendarPanel() {
     void getStored('campusMap').then(setCampusMapState);
     const applySettings = (s: Settings) => {
       setPro(isPro(s)); // animations are a Pro perk
-      setWalkSpeed(s.walkSpeedKmh ?? DEFAULT_WALK_KMH);
       setTerms(s.terms);
     };
     void getStored('settings').then((s) => {

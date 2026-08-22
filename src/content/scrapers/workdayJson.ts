@@ -8,10 +8,11 @@
  * + credits). Tune against real fixtures captured from the user's tenant.
  */
 import type { HistoryCourse, Meeting, Section } from '../../shared/types';
+import { GRADE_TOKEN_RE, statusForGrade } from '../../shared/grades';
 import { parseMeetingPatterns } from '../../shared/time';
 
 export const COURSE_CODE_RE = /\b([A-Z]{2,6})\s?-?\s?(\d{3,5}[A-Z]?)\b/;
-const GRADE_RE = /^(A|A-|A\+|B\+|B|B-|C\+|C|C-|D\+|D|D-|F|P|NP|CR|NC|W|I|S|U|IP)$/;
+const GRADE_RE = GRADE_TOKEN_RE;
 const SECTION_SUFFIX_RE = /\b\d{3,5}[A-Z]?-([A-Z0-9]{1,4})\b/;
 
 interface LeafCluster {
@@ -162,7 +163,7 @@ export function extractHistoryCourses(json: unknown): HistoryCourse[] {
       credits: extractCredits(strings),
       grade,
       term,
-      status: grade ? 'completed' : 'in-progress',
+      status: statusForGrade(grade),
     });
   }
   return [...seen.values()];

@@ -4,6 +4,20 @@ All notable user-facing changes to the extension.
 
 ## Unreleased
 
+- **More accurate academic history**: grades and credits are now read from the
+  grid's own columns instead of "the first cell that looks like one", so a
+  Grading Basis of "S" is no longer mistaken for a grade and a Grade Points
+  value is no longer imported as credits. Withdrawn (W), audit (AU) and
+  in-progress (IP) courses no longer count as completed, transfer credit (TR)
+  does, a section suffix ("CSE 1302-01") is no longer read as 1 credit, and a
+  Roman numeral in a title ("Physics I") is no longer read as an Incomplete.
+- **Clearer Future terms editor**: labelled columns, terms are editable and
+  re-orderable after adding, one click adds the next term (or fills in the next
+  4 years), and the optional dates/registration fields are tucked behind a
+  toggle.
+- **Walking speed is no longer a setting**: walk estimates always use a normal
+  pace (4.8 km/h with a 1.3x detour factor).
+
 - **Subscription management**: the Upgrade page now shows a "Your subscription"
   card with how many days remain before the next charge, and cancels (or
   resumes) in one click. Cancelling keeps every paid feature until the period

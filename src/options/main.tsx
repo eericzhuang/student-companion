@@ -532,85 +532,186 @@ function ApiKeySection({ settings, patch }: SectionProps) {
   );
 }
 
-function TermSection({ settings, patch }: SectionProps) {
-  const [label, setLabel] = useState('');
-  const [cap, setCap] = useState(18);
+/** "Fall 2026" → the term that follows it, so the board can be filled in one click. */
+function nextTermLabel(previous: string | null): string {
+  const now = new Date();
+  if (!previous) {
+    // Before June, the next planning target is this Fall; after it, next Spring.
+    return now.getMonth() < 5 ? `Fall ${now.getFullYear()}` : `Spring ${now.getFullYear() + 1}`;
+  }
+  const m = previous.match(/^(Fall|Spring|Summer|Winter)\s+(\d{4})$/i);
+  if (!m) return `Fall ${now.getFullYear()}`;
+  const season = m[1]!.toLowerCase();
+  const year = parseInt(m[2]!, 10);
+  // Skip Summer/Winter when generating: most students plan Fall → Spring.
+  if (season === 'fall') return `Spring ${year + 1}`;
+  if (season === 'spring') return `Fall ${year}`;
+  if (season === 'summer') return `Fall ${year}`;
+  return `Spring ${year}`;
+}
 
-  const add = () => {
-    if (!label.trim()) return;
-    const term: TermConfig = { id: crypto.randomUUID(), label: label.trim(), creditCap: cap };
-    void patch({ terms: [...settings.terms, term] });
-    setLabel('');
+function TermSection({ settings, patch }: SectionProps) {
+  const [showDates, setShowDates] = useState(false);
+
+  const update = (id: string, changes: Partial<TermConfig>) =>
+    void patch({ terms: settings.terms.map((t) => (t.id === id ? { ...t, ...changes } : t)) });
+
+  const addTerm = (label: string) =>
+    void patch({
+      terms: [...settings.terms, { id: crypto.randomUUID(), label, creditCap: 18 }],
+    });
+
+  const addNext = () => addTerm(nextTermLabel(settings.terms.at(-1)?.label ?? null));
+
+  const addFourYears = () => {
+    const extra: TermConfig[] = [];
+    let label = settings.terms.at(-1)?.label ?? null;
+    for (let i = 0; i < 8; i++) {
+      label = nextTermLabel(label);
+      extra.push({ id: crypto.randomUUID(), label, creditCap: 18 });
+    }
+    void patch({ terms: [...settings.terms, ...extra] });
+  };
+
+  const move = (index: number, delta: number) => {
+    const next = [...settings.terms];
+    const target = index + delta;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target]!, next[index]!];
+    void patch({ terms: next });
   };
 
   return (
     <div class="pl-card">
-      <h2>Future terms (for the semester board)</h2>
-      <table class="pl-table">
-        {settings.terms.map((t) => {
-          const setDate = (key: 'startDate' | 'endDate', value: string) =>
-            void patch({
-              terms: settings.terms.map((x) => (x.id === t.id ? { ...x, [key]: value || undefined } : x)),
-            });
-          return (
+      <h2>Future terms</h2>
+      <p class="pl-muted">
+        The terms you still plan to take. The 🗂 <b>Semester board</b> spreads your remaining
+        requirements across them, respecting prerequisites and each term's credit cap.
+      </p>
+
+      {settings.terms.length === 0 ? (
+        <div class="pl-empty">
+          <p style={{ margin: '0 0 10px' }}>No terms yet — the semester board needs at least one.</p>
+          <button class="pl-btn" onClick={addFourYears}>
+            ✨ Fill in the next 4 years
+          </button>{' '}
+          <button class="pl-btn secondary" onClick={addNext}>
+            + Add {nextTermLabel(null)} only
+          </button>
+        </div>
+      ) : (
+        <table class="pl-table pl-terms">
+          <thead>
             <tr>
-              <td>{t.label}</td>
-              <td>{t.creditCap} credit cap</td>
-              <td title="First day of classes (used for calendar export)">
-                <input type="date" value={t.startDate ?? ''} onChange={(e) => setDate('startDate', (e.target as HTMLInputElement).value)} />
-              </td>
-              <td title="Last day of classes (used for calendar export)">
-                <input type="date" value={t.endDate ?? ''} onChange={(e) => setDate('endDate', (e.target as HTMLInputElement).value)} />
-              </td>
-              <td title="When your registration window opens — you'll get a reminder 24 h and 10 min before">
-                <input
-                  type="datetime-local"
-                  value={t.registrationAt ?? ''}
-                  onChange={(e) =>
-                    void patch({
-                      terms: settings.terms.map((x) =>
-                        x.id === t.id ? { ...x, registrationAt: (e.target as HTMLInputElement).value || undefined } : x,
-                      ),
-                    })
-                  }
-                />
-              </td>
-              <td style={{ width: '40px' }}>
-                <button
-                  class="pl-btn danger"
-                  onClick={() => void patch({ terms: settings.terms.filter((x) => x.id !== t.id) })}
-                >
-                  ✕
-                </button>
-              </td>
+              <th>Term</th>
+              <th style={{ width: '120px' }} title="Most courses are 3 credits, so 18 ≈ 6 courses">
+                Credit cap
+              </th>
+              {showDates && <th style={{ width: '150px' }}>First day</th>}
+              {showDates && <th style={{ width: '150px' }}>Last day</th>}
+              {showDates && <th style={{ width: '190px' }}>Registration opens</th>}
+              <th style={{ width: '90px' }}></th>
             </tr>
-          );
-        })}
-      </table>
+          </thead>
+          <tbody>
+            {settings.terms.map((t, i) => (
+              <tr>
+                <td>
+                  <input
+                    type="text"
+                    style={{ width: '100%' }}
+                    value={t.label}
+                    onChange={(e) => update(t.id, { label: (e.target as HTMLInputElement).value })}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    style={{ width: '70px' }}
+                    value={t.creditCap}
+                    onChange={(e) =>
+                      update(t.id, { creditCap: parseInt((e.target as HTMLInputElement).value, 10) || 18 })
+                    }
+                  />
+                </td>
+                {showDates && (
+                  <td>
+                    <input
+                      type="date"
+                      value={t.startDate ?? ''}
+                      onChange={(e) => update(t.id, { startDate: (e.target as HTMLInputElement).value || undefined })}
+                    />
+                  </td>
+                )}
+                {showDates && (
+                  <td>
+                    <input
+                      type="date"
+                      value={t.endDate ?? ''}
+                      onChange={(e) => update(t.id, { endDate: (e.target as HTMLInputElement).value || undefined })}
+                    />
+                  </td>
+                )}
+                {showDates && (
+                  <td>
+                    <input
+                      type="datetime-local"
+                      value={t.registrationAt ?? ''}
+                      onChange={(e) =>
+                        update(t.id, { registrationAt: (e.target as HTMLInputElement).value || undefined })
+                      }
+                    />
+                  </td>
+                )}
+                <td class="pl-term-actions">
+                  <button class="pl-icon-btn" title="Move earlier" disabled={i === 0} onClick={() => move(i, -1)}>
+                    ↑
+                  </button>
+                  <button
+                    class="pl-icon-btn"
+                    title="Move later"
+                    disabled={i === settings.terms.length - 1}
+                    onClick={() => move(i, 1)}
+                  >
+                    ↓
+                  </button>
+                  <button
+                    class="pl-icon-btn danger"
+                    title={`Remove ${t.label}`}
+                    onClick={() => void patch({ terms: settings.terms.filter((x) => x.id !== t.id) })}
+                  >
+                    ✕
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
       {settings.terms.length > 0 && (
-        <p class="pl-muted">
-          All optional: start/end dates power the calendar 📆 .ics export; setting when
-          registration opens gets you a ⏰ reminder 24 hours and 10 minutes before.
+        <div class="pl-row" style={{ marginTop: '10px', flexWrap: 'wrap', gap: '8px' }}>
+          <button class="pl-btn" onClick={addNext}>
+            + Add {nextTermLabel(settings.terms.at(-1)?.label ?? null)}
+          </button>
+          <button class="pl-btn secondary" onClick={addFourYears}>
+            + Next 4 years
+          </button>
+          <button class="pl-btn secondary" onClick={() => setShowDates(!showDates)}>
+            {showDates ? '▾ Hide dates & reminders' : '▸ Dates & registration reminders'}
+          </button>
+        </div>
+      )}
+
+      {showDates && (
+        <p class="pl-muted" style={{ marginTop: '8px' }}>
+          All optional. First/last day fill in the 📆 calendar (.ics) export so recurring classes
+          stop at the end of term; registration date gets you a ⏰ reminder 24 hours and 10 minutes
+          before your window opens.
         </p>
       )}
-      <div class="pl-row" style={{ marginTop: '8px' }}>
-        <input
-          type="text"
-          placeholder='e.g. "Fall 2026"'
-          value={label}
-          onInput={(e) => setLabel((e.target as HTMLInputElement).value)}
-        />
-        <input
-          type="number"
-          style={{ width: '90px' }}
-          value={cap}
-          onInput={(e) => setCap(parseInt((e.target as HTMLInputElement).value, 10) || 18)}
-          title="Credit cap"
-        />
-        <button class="pl-btn" onClick={add}>
-          Add term
-        </button>
-      </div>
     </div>
   );
 }
@@ -846,19 +947,6 @@ function CampusMapSection({ settings, patch }: SectionProps) {
           />
         </div>
       )}
-      <div class="pl-row" style={{ marginBottom: '10px' }}>
-        <label style={{ flex: '0 0 auto' }}>🚶 Walking speed</label>
-        <input
-          type="number"
-          step="0.1"
-          min="1"
-          max="15"
-          style={{ width: '90px', flex: '0 0 auto' }}
-          value={settings.walkSpeedKmh ?? 4.8}
-          onChange={(e) => void patch({ walkSpeedKmh: parseFloat((e.target as HTMLInputElement).value) || 4.8 })}
-        />
-        <span class="pl-muted">km/h (4.8 ≈ normal pace; estimates include a 1.3× detour factor)</span>
-      </div>
       {entries.length > 0 && (
         <p class="pl-muted">
           Wrong coordinates are cached until refreshed:{' '}

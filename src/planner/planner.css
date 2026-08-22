@@ -1342,3 +1342,36 @@ table.pl-table th { color: #475569; font-size: 12px; }
 .pl-dark .pl-lv-hero.pl-lv-1 .pl-lv-meta { color: #94a3b8; }
 .pl-dark .pl-lv-journey { background: #1e293b; border-color: #334155; }
 .pl-dark .pl-lv-xprules { color: #94a3b8; }
+
+/* ---------- Future terms editor ---------- */
+
+.pl-terms td { vertical-align: middle; }
+.pl-terms input[type='text'],
+.pl-terms input[type='number'] { padding: 6px 8px; }
+.pl-term-actions { white-space: nowrap; text-align: right; }
+.pl-icon-btn {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  line-height: 1;
+  font-size: 13px;
+  cursor: pointer;
+  margin-left: 3px;
+}
+.pl-icon-btn:hover:not(:disabled) { background: #f1f5f9; }
+.pl-icon-btn:disabled { opacity: 0.35; cursor: default; }
+.pl-icon-btn.danger { color: #b91c1c; border-color: #fecaca; }
+.pl-icon-btn.danger:hover { background: #fef2f2; }
+.pl-empty {
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  color: #475569;
+}
+.pl-dark .pl-icon-btn { background: #1e293b; border-color: #475569; color: #e2e8f0; }
+.pl-dark .pl-icon-btn:hover:not(:disabled) { background: #334155; }
+.pl-dark .pl-empty { border-color: #475569; color: #cbd5e1; }
