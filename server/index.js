@@ -15,9 +15,11 @@
  */
 import express from 'express';
 import Stripe from 'stripe';
-import { isAdminToken, mountRelay } from './relay.js';
+import { isAdminToken, mountRelay, relayConfig } from './relay.js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const KEY = process.env.STRIPE_SECRET_KEY || '';
+const LIVE = /_live_/.test(KEY);
+const stripe = new Stripe(KEY);
 const BASE_URL = process.env.BASE_URL || 'http://localhost:8787';
 
 /**
@@ -60,7 +62,17 @@ app.use((_req, res, next) => {
 });
 app.options('*', (_req, res) => res.sendStatus(204));
 
-app.get('/health', (_req, res) => res.json({ ok: true }));
+app.get('/health', (req, res) =>
+  res.json({
+    ok: true,
+    // Deployment self-check: which env vars actually arrived, without
+    // revealing any of their values.
+    stripe: KEY ? (LIVE ? 'live' : 'test') : 'missing',
+    baseUrl: publicBase(req),
+    baseUrlFromEnv: BASE_URL !== 'http://localhost:8787',
+    ...relayConfig(),
+  }),
+);
 
 app.post('/checkout', async (req, res) => {
   try {

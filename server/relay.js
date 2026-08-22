@@ -31,6 +31,17 @@ const MAX_TOKENS_CAP = 16000;
 
 export const isAdminToken = (token) => ADMIN_TOKENS.has(token);
 
+/**
+ * Config summary for /health — counts and booleans only, never values. A
+ * mistyped ADMIN_TOKENS or a missing relay key is otherwise invisible from
+ * outside and shows up as a confusing 401/503 to the user instead.
+ */
+export const relayConfig = () => ({
+  aiRelayKey: ANTHROPIC_API_KEY.length > 0,
+  adminTokens: ADMIN_TOKENS.size,
+  adminTokenLengths: [...ADMIN_TOKENS].map((t) => t.length),
+});
+
 /** token -> {at, plan, active, subId} */
 const licenseCache = new Map();
 /** subId -> {month, cents} (mirror of subscription metadata) */
