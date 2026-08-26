@@ -4,6 +4,13 @@ All notable user-facing changes to the extension.
 
 ## Unreleased
 
+- **Correct course names and professors from the schedule page**: the captured
+  title was the entire table row ("CSE 1302-01 - Introduction to Computer
+  Engineering MWF | 10:00 AM - 10:50 AM | Urbauer Hall 218 InstructorKatsianos,
+  Bill"). It now comes from the course cell alone, a section suffix and a
+  trailing day pattern are stripped, and an instructor cell labelled
+  "Instructor: Grace Chen" is no longer dropped.
+
 - **No more console warnings**: the build no longer emits `modulepreload`
   hints, which Chrome logged for every planner asset as a "cross-world
   extension resource mismatch" (harmless, but it filled the extension's Errors

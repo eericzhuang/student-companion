@@ -25,7 +25,12 @@ export function cleanSectionTitle(courseCode: string, title: string): string {
   s = s.split(/\s*\|\s*/)[0]!;
   s = s.split(/\s*\d{1,2}:\d{2}\s*(?:AM|PM)?/i)[0]!;
   const esc = courseCode.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  s = s.replace(new RegExp(`^${esc}\\s*[-–·:]*\\s*`, 'i'), '');
+  // A section id after the code ("CSE 1302-01 - Title") must contain a digit and
+  // end at a separator, or "SDS 4030 - Statistics…" loses "Stat" to the suffix.
+  s = s.replace(
+    new RegExp(`^${esc}(?:\\s*-\\s*[A-Za-z]{0,2}\\d{1,3}[A-Za-z]?(?=\\s|$|[-–·:]))?\\s*[-–·:]*\\s*`, 'i'),
+    '',
+  );
   // rows often repeat the code as a section id ("CODE-01 - Title…Lec") — cut there
   const again = s.search(new RegExp(`${esc}(?:-\\w+)?\\s*[-–·:]`, 'i'));
   if (again > 0) s = s.slice(0, again);
@@ -34,6 +39,8 @@ export function cleanSectionTitle(courseCode: string, title: string): string {
   s = cutJunkWords(s);
   // day abbreviations glued after the title once the time was cut ("…ProgrammingMWF")
   s = s.replace(/(?<=[a-z])(?:[MTWF]|Th|Tu|Sa|Su)+$/, '');
+  // …or left standing as their own trailing token ("… Engineering MWF")
+  s = s.replace(/\s+(?:MTWThF|MTWRF|MWF|TTh|TuTh|MW|MF|WF|TR|Th|Tu|Sa|Su|[MTWRF])$/, '');
   // credit counts glued straight onto the last word ("…for DS II3")
   s = s.replace(/(?<=[A-Za-z])\d+(?:\.\d+)?$/, '');
   s = s.trim().replace(/[-–·:,\s]+$/, '');

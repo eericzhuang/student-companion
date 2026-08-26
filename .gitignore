@@ -8,3 +8,9 @@ server/.env
 server/node_modules/
 # unrelated local experiment, not part of this product
 stock-agent/
+
+# Chrome for Testing, downloaded for end-to-end runs
+chrome/
+
+# e2e fixture cert (regenerate locally, see e2e/README.md)
+e2e/*.pem

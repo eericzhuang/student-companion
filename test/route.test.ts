@@ -166,3 +166,31 @@ describe('scrape cleanup (real Workday tenant junk)', () => {
     expect(t[0]!.distanceM!).toBeLessThan(2500);
   });
 });
+
+describe('cleanSectionTitle — shapes seen in a real browser capture', () => {
+  it('drops a section suffix that follows the code', async () => {
+    const { cleanSectionTitle } = await import('../src/shared/schedule');
+    expect(cleanSectionTitle('CSE 1302', 'CSE 1302-01 - Introduction to Computer Engineering')).toBe(
+      'Introduction to Computer Engineering',
+    );
+    expect(cleanSectionTitle('MATH 2200', 'MATH 2200-02 - Multivariable Calculus')).toBe(
+      'Multivariable Calculus',
+    );
+  });
+
+  it('drops a trailing day pattern left standing after the time was cut', async () => {
+    const { cleanSectionTitle } = await import('../src/shared/schedule');
+    expect(
+      cleanSectionTitle('CSE 1302', 'CSE 1302-01 - Introduction to Computer Engineering MWF | 10:00 AM - 10:50 AM | Urbauer Hall 218'),
+    ).toBe('Introduction to Computer Engineering');
+    expect(cleanSectionTitle('MATH 2200', 'MATH 2200-02 - Multivariable Calculus TTh 1:00 PM')).toBe(
+      'Multivariable Calculus',
+    );
+  });
+
+  it('keeps Roman numerals and real words that look like day letters', async () => {
+    const { cleanSectionTitle } = await import('../src/shared/schedule');
+    expect(cleanSectionTitle('PHYS 1112', 'PHYS 1112 - Physics I Mechanics')).toBe('Physics I Mechanics');
+    expect(cleanSectionTitle('CHEM 1110', 'CHEM 1110-03 - General Chemistry I')).toBe('General Chemistry I');
+  });
+});
