@@ -77,11 +77,13 @@ dashboard's privacy-policy field.
   > 🎓 DEGREE PLANNER — import your degree requirements, track multiple
   > degrees, GPA & what-if grades, see overlap, and lay out future semesters
   > (prereq-aware). Dark mode included.
-  > ✨ AI ADVISOR (Pro) / deep research (Supreme) — included with the plan,
-  > nothing to configure (rolling out to beta users in waves).
+  > ✨ AI ADVISOR (Pro) / deep research (Supreme) — included with the
+  > subscription, no API key to configure.
   >
-  > Your data stays on your device — no account, no developer server, no
-  > analytics. Privacy policy: <your URL>.
+  > Your schedule, grades, and degree plans stay on your device — no account
+  > to create, no analytics, nothing uploaded. The only data that ever leaves
+  > is what you explicitly send to the AI (and only on paid plans).
+  > Privacy policy: https://eericzhuang.github.io/student-companion/
   >
   > Independent project — not affiliated with, endorsed by, or sponsored by
   > Workday, Inc. or RateMyProfessors. Requires your school to use Workday
@@ -113,7 +115,10 @@ courses.”
   inline.”
 - `https://api.anthropic.com/*` — “Sends AI planning requests to Anthropic's
   API, only on explicit user action (e.g. asking the AI advisor or parsing a
-  transcript the user uploaded).”
+  transcript the user uploaded). On subscriber builds these requests go
+  through our billing/relay endpoint instead, which forwards them to Anthropic
+  on our own API key so users never supply one; request content is not
+  logged or stored.”
 - `https://nominatim.openstreetmap.org/*` — “Free geocoding: converts the
   campus building names on the user's schedule into coordinates for the
   calendar's walking-route view. Only building names and the school name are
