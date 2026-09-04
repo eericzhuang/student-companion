@@ -2,7 +2,14 @@
 
 All notable user-facing changes to the extension.
 
-## Unreleased
+## 0.1.1
+
+- **Manually entered building coordinates are found again**: walk times and the
+  Route view looked up pins with an exact, case-sensitive key, so coordinates
+  saved as "URBAUER" were invisible to a schedule that says "Urbauer Hall" —
+  the building kept reporting as not located no matter how many times you
+  entered it. Lookups now tolerate case, spacing, and a missing "Hall"/"Center"
+  suffix (and refuse to guess when two buildings differ only by that word).
 
 - **Correct course names and professors from the schedule page**: the captured
   title was the entire table row ("CSE 1302-01 - Introduction to Computer

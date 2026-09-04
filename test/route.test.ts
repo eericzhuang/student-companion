@@ -194,3 +194,47 @@ describe('cleanSectionTitle — shapes seen in a real browser capture', () => {
     expect(cleanSectionTitle('CHEM 1110', 'CHEM 1110-03 - General Chemistry I')).toBe('General Chemistry I');
   });
 });
+
+describe('findBuilding — saved pins must survive name-case differences', () => {
+  it('finds a pin whose stored key differs in case or spacing', async () => {
+    const { findBuilding } = await import('../src/shared/route');
+    const map = { URBAUER: { lat: 38.6493571, lng: -90.3060608, source: 'manual' as const } };
+    expect(findBuilding(map, 'URBAUER')).toBeTruthy();
+    expect(findBuilding(map, 'Urbauer')).toBeTruthy();
+    expect(findBuilding(map, ' urbauer ')).toBeTruthy();
+  });
+
+  it('bridges a missing generic suffix in either direction', async () => {
+    const { findBuilding } = await import('../src/shared/route');
+    expect(findBuilding({ URBAUER: { lat: 1, lng: 2, source: 'manual' as const } }, 'Urbauer Hall')).toBeTruthy();
+    expect(findBuilding({ 'Urbauer Hall': { lat: 1, lng: 2, source: 'manual' as const } }, 'URBAUER')).toBeTruthy();
+  });
+
+  it('refuses to guess when the suffix is what distinguishes two buildings', async () => {
+    const { findBuilding } = await import('../src/shared/route');
+    const map = {
+      'Baker Hall': { lat: 1, lng: 2, source: 'manual' as const },
+      'Baker Center': { lat: 3, lng: 4, source: 'manual' as const },
+    };
+    expect(findBuilding(map, 'Baker')).toBeNull();
+    expect(findBuilding(map, 'Baker Hall')!.lat).toBe(1);
+  });
+
+  it('returns null for an unknown building', async () => {
+    const { findBuilding } = await import('../src/shared/route');
+    expect(findBuilding({ URBAUER: { lat: 1, lng: 2, source: 'manual' as const } }, 'Ridgley')).toBeNull();
+    expect(findBuilding({}, null)).toBeNull();
+  });
+
+  it('walk math now works across a case mismatch (the reported bug)', () => {
+    const t = dayTransitions(
+      [section('A', 600, 650, 'URBAUER 218'), section('B', 660, 710, 'Ridgley Hall 110')],
+      {
+        'Urbauer Hall': { lat: 38.6493571, lng: -90.3060608, source: 'manual' },
+        RIDGLEY: { lat: 38.6481359, lng: -90.3061696, source: 'manual' },
+      },
+    );
+    expect(t[0]!.risk).not.toBe('unknown');
+    expect(t[0]!.distanceM).toBeGreaterThan(0);
+  });
+});

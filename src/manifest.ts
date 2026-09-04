@@ -5,7 +5,7 @@ export default defineManifest({
   // "for Workday" (nominative use) rather than leading with the trademark —
   // Chrome Web Store impersonation policy rejects names that imply affiliation.
   name: 'Student Companion for Workday',
-  version: '0.1.0',
+  version: '0.1.1',
   description:
     'Live schedule calendar, RateMyProfessors ratings, and multi-degree planning for Workday Student.',
   // world:'MAIN' content scripts require Chrome 111+.

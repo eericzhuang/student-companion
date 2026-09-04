@@ -29,6 +29,40 @@ export function buildingOf(location: string): string {
   return s || location.trim();
 }
 
+/**
+ * Building names reach the map from three places that disagree about case and
+ * wording: the Workday grid ("URBAUER 218"), the geocoder ("Urbauer Hall"), and
+ * whatever the user types in the Options editor. Match on a normalized key so a
+ * saved pin is actually found — an exact-key lookup made manually entered
+ * coordinates look like they had never been saved.
+ */
+export function buildingKey(name: string): string {
+  return name.trim().replace(/[.,]/g, '').replace(/\s+/g, ' ').toUpperCase();
+}
+
+/** Generic words that one source appends and another leaves off. */
+const GENERIC_SUFFIX = /\s+(HALL|BUILDING|BLDG|CENTER|CENTRE|COMPLEX|TOWER|ANNEX)$/;
+
+/** Look up a building tolerating case, spacing, and a missing generic suffix. */
+export function findBuilding<T>(
+  buildings: Record<string, T>,
+  name: string | null | undefined,
+): T | null {
+  if (!name) return null;
+  const direct = buildings[name];
+  if (direct) return direct;
+  const key = buildingKey(name);
+  const entries = Object.entries(buildings);
+  const exact = entries.find(([k]) => buildingKey(k) === key);
+  if (exact) return exact[1];
+  // "URBAUER" saved vs "Urbauer Hall" on the schedule (or the reverse). Only
+  // accept this when exactly one building matches, so "Baker Hall" and
+  // "Baker Center" never collapse into each other.
+  const bare = key.replace(GENERIC_SUFFIX, '');
+  const loose = entries.filter(([k]) => buildingKey(k).replace(GENERIC_SUFFIX, '') === bare);
+  return loose.length === 1 ? loose[0]![1] : null;
+}
+
 export interface LatLng {
   lat: number;
   lng: number;
@@ -124,10 +158,14 @@ export function dayTransitions(
         walkMin = 0;
         distanceM = 0;
         risk = 'ok';
-      } else if (fromB && toB && buildings[fromB] && buildings[toB]) {
-        distanceM = haversineMeters(buildings[fromB]!, buildings[toB]!);
-        walkMin = walkMinutes(distanceM, speedKmh);
-        risk = walkMin > breakMin ? 'miss' : walkMin > breakMin * 0.75 ? 'tight' : 'ok';
+      } else {
+        const fromPin = findBuilding(buildings, fromB);
+        const toPin = findBuilding(buildings, toB);
+        if (fromPin && toPin) {
+          distanceM = haversineMeters(fromPin, toPin);
+          walkMin = walkMinutes(distanceM, speedKmh);
+          risk = walkMin > breakMin ? 'miss' : walkMin > breakMin * 0.75 ? 'tight' : 'ok';
+        }
       }
       out.push({
         dayMask: mask,

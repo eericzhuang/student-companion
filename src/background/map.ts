@@ -10,6 +10,7 @@
  */
 import type { CampusBuilding, CampusMap } from '../shared/types';
 import { getStored, setStored } from '../shared/storage';
+import { findBuilding } from '../shared/route';
 import { haversineMeters } from '../shared/route';
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
@@ -195,7 +196,7 @@ export async function geocodeBuildings(names: string[]): Promise<MapLookupResult
   await ensureCenter(map, googleKey);
   const missing: string[] = [];
   for (const name of names) {
-    if (map.buildings[name]) continue;
+    if (findBuilding(map.buildings, name)) continue;
     const hit = await lookupBuilding(name, map, googleKey);
     if (hit) map.buildings[name] = hit;
     else missing.push(name);
@@ -239,7 +240,7 @@ export async function previewGeocode(names: string[]): Promise<GeocodePreview> {
   const candidates: GeocodeCandidate[] = [];
   const missing: string[] = [];
   for (const name of names) {
-    if (map.buildings[name]) continue;
+    if (findBuilding(map.buildings, name)) continue;
     const hit = await lookupBuilding(name, map, googleKey);
     if (hit) {
       candidates.push({

@@ -28,6 +28,7 @@ import type { GeocodeCandidate, GeocodePreview } from '../../background/map';
 import { computeFreeSlots, dayMaskToLabels, formatMinutes } from '../../shared/time';
 import {
   buildingOf,
+  findBuilding,
   DAY_LABELS,
   dayTransitions,
   DEFAULT_WALK_KMH,
@@ -469,7 +470,7 @@ function RouteMap({
     ],
     [sections],
   );
-  const missing = allBuildings.filter((b) => !buildings[b]);
+  const missing = allBuildings.filter((b) => !findBuilding(buildings, b));
 
   // Located-but-unconfirmed pins: the user checks each little map before
   // anything is saved (geocoders are sometimes confidently wrong).
@@ -524,8 +525,8 @@ function RouteMap({
   const fmtDist = (m: number) =>
     m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km · ${(m / 1609.34).toFixed(1)} mi`;
   const gmaps = (t: Transition): string | null => {
-    const a = t.fromBuilding ? buildings[t.fromBuilding] : null;
-    const b = t.toBuilding ? buildings[t.toBuilding] : null;
+    const a = findBuilding(buildings, t.fromBuilding);
+    const b = findBuilding(buildings, t.toBuilding);
     if (!a || !b) return null;
     return `https://www.google.com/maps/dir/?api=1&origin=${a.lat},${a.lng}&destination=${b.lat},${b.lng}&travelmode=walking`;
   };
@@ -684,7 +685,7 @@ function RouteMap({
                 )}
                 <span class="wdc-itin-bld">
                   {m.location ? buildingOf(m.location) : <i>no location</i>}
-                  {m.location && !buildings[buildingOf(m.location)] && ' ❓'}
+                  {m.location && !findBuilding(buildings, buildingOf(m.location)) && ' ❓'}
                 </span>
               </div>
             </>
