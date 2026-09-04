@@ -36,7 +36,16 @@ export async function activateLicense(code: string): Promise<LicenseStatus> {
         : `That subscription is not active (status: ${license.status}).`,
     );
   }
-  await updateStored('settings', (s) => ({ ...s, plan: license.plan, licenseToken: token }));
+  // An adm_ token is the owner credential (the server reports status 'admin'),
+  // so it also turns on owner-only tooling — selector overrides, the level-theme
+  // picker. Verified server-side, unlike the old hard-coded unlock code.
+  const owner = license.status === 'admin';
+  await updateStored('settings', (s) => ({
+    ...s,
+    plan: license.plan,
+    licenseToken: token,
+    admin: owner || s.admin,
+  }));
   return license;
 }
 
@@ -57,8 +66,9 @@ export async function refreshLicense(): Promise<void> {
   }
   await setStored('licenseStatus', license);
   const nextPlan = license.active ? license.plan : 'free';
-  if (nextPlan !== settings.plan) {
-    await updateStored('settings', (s) => ({ ...s, plan: nextPlan }));
+  const owner = license.active && license.status === 'admin';
+  if (nextPlan !== settings.plan || owner !== settings.admin) {
+    await updateStored('settings', (s) => ({ ...s, plan: nextPlan, admin: owner }));
   }
 }
 

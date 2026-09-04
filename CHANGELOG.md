@@ -4,6 +4,12 @@ All notable user-facing changes to the extension.
 
 ## 0.1.1
 
+- **Owner mode moved onto the owner token**: pasting an `adm_` code on the
+  Upgrade page now also unlocks owner-only tooling (level-theme picker,
+  selector overrides), and the separate hard-coded "owner access" unlock in
+  Options is gone. One server-verified credential instead of two, and revoking
+  the token on the server now removes owner mode on the next daily re-check.
+
 - **Manually entered building coordinates are found again**: walk times and the
   Route view looked up pins with an exact, case-sensitive key, so coordinates
   saved as "URBAUER" were invisible to a schedule that says "Urbauer Hall" —

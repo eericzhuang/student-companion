@@ -55,7 +55,6 @@ function App() {
       <FeedbackSection settings={settings} />
       {settings.admin && <AdminSection settings={settings} patch={patch} />}
       <BackupSection />
-      {!settings.admin && <AdminSection settings={settings} patch={patch} />}
       <p class="pl-muted" style={{ textAlign: 'center', marginTop: '18px' }}>
         Something broken, or a school layout we don't recognize?{' '}
         <a href="mailto:eric2007118@gmail.com?subject=Student%20Companion%20support">
@@ -788,14 +787,7 @@ function AdvancedSelectors({ settings, patch }: SectionProps) {
 
 // SHA-256 of the owner unlock code. Only the hash ships in the bundle, so the
 // code itself can't be read out of the extension files.
-const ADMIN_CODE_HASH = 'b538bdf6ec8aeda3eb8a28a4ed108ebbc2ccc89b895d34d7a65e657bdea37fc5';
 
-async function sha256Hex(text: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
 
 /**
  * Campus map: the building coordinates behind the calendar's walk-time
@@ -1206,10 +1198,6 @@ function FeedbackSection({ settings }: { settings: Settings }) {
 }
 
 function AdminSection({ settings, patch }: SectionProps) {
-  const [open, setOpen] = useState(false);
-  const [code, setCode] = useState('');
-  const [error, setError] = useState<string | null>(null);
-
   if (settings.admin) {
     return (
       <div class="pl-card" style={{ borderColor: '#16a34a' }}>
@@ -1220,7 +1208,7 @@ function AdminSection({ settings, patch }: SectionProps) {
         </p>
         <button
           class="pl-btn secondary"
-          onClick={() => void patch({ admin: false, plan: 'free' })}
+          onClick={() => void patch({ admin: false, plan: 'free', licenseToken: null })}
         >
           Turn off owner mode
         </button>
@@ -1228,41 +1216,9 @@ function AdminSection({ settings, patch }: SectionProps) {
     );
   }
 
-  const submit = async () => {
-    if ((await sha256Hex(code.trim())) === ADMIN_CODE_HASH) {
-      setError(null);
-      void patch({ admin: true, plan: 'supreme' });
-    } else {
-      setError('Incorrect code.');
-    }
-  };
-
-  // Customer view: no owner card — just a discreet footer link that reveals
-  // the unlock input on demand.
-  return (
-    <p class="pl-muted" style={{ textAlign: 'center', marginTop: '6px' }}>
-      {open ? (
-        <span class="pl-row" style={{ justifyContent: 'center' }}>
-          <input
-            type="password"
-            placeholder="Owner code"
-            style={{ width: '180px', flex: '0 0 auto' }}
-            value={code}
-            onInput={(e) => setCode((e.target as HTMLInputElement).value)}
-            onKeyDown={(e) => e.key === 'Enter' && void submit()}
-          />
-          <button class="pl-btn" style={{ flex: '0 0 auto' }} onClick={() => void submit()}>
-            Unlock
-          </button>
-          {error && <span class="pl-error" style={{ margin: 0 }}>{error}</span>}
-        </span>
-      ) : (
-        <button class="pl-link-inline" style={{ opacity: 0.6 }} onClick={() => setOpen(true)}>
-          owner access
-        </button>
-      )}
-    </p>
-  );
+  // No local unlock code any more: owner mode rides on the server-verified
+  // adm_ token pasted on the Upgrade page, so there is nothing to reveal here.
+  return null;
 }
 
 watchPageDark();
