@@ -154,7 +154,7 @@ export function dayTransitions(
       let walkMin: number | null = null;
       let distanceM: number | null = null;
       let risk: TransitionRisk = 'unknown';
-      if (fromB && toB && fromB.toLowerCase() === toB.toLowerCase()) {
+      if (fromB && toB && buildingKey(fromB) === buildingKey(toB)) {
         walkMin = 0;
         distanceM = 0;
         risk = 'ok';

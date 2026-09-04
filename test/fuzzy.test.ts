@@ -47,3 +47,17 @@ describe('scoreNameMatch', () => {
     expect(s('Jane Smith', 'Robert Smith')).toBeLessThan(CONFIDENT_MATCH);
   });
 });
+
+describe('RMP cache keys — a correction must be readable back', () => {
+  it('the raw scraped form and the clean form share one key', async () => {
+    const { cacheKey } = await import('../src/background/rmp/lookup');
+    expect(cacheKey('InstructorKatsianos, Bill')).toBe(cacheKey('Katsianos, Bill'));
+    expect(cacheKey('Instructor: Grace Chen')).toBe(cacheKey('Grace Chen'));
+    expect(cacheKey('Grace Chen')).toBe(cacheKey('  grace   chen '));
+  });
+
+  it('different professors still get different keys', async () => {
+    const { cacheKey } = await import('../src/background/rmp/lookup');
+    expect(cacheKey('Grace Chen')).not.toBe(cacheKey('Grace Chan'));
+  });
+});

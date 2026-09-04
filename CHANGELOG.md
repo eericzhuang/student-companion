@@ -4,6 +4,11 @@ All notable user-facing changes to the extension.
 
 ## 0.1.1
 
+- **Professor corrections stick**: choosing the right professor manually filed
+  the correction under the raw scraped name ("InstructorKatsianos, Bill") while
+  lookups read the cleaned one, so the correction silently never applied. Cache
+  and override keys are now derived in one place that cleans the name itself.
+
 - **Owner mode moved onto the owner token**: pasting an `adm_` code on the
   Upgrade page now also unlocks owner-only tooling (level-theme picker,
   selector overrides), and the separate hard-coded "owner access" unlock in

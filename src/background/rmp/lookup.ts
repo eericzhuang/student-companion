@@ -35,8 +35,13 @@ async function withSlot<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
+/**
+ * The one place a cache/override key is derived. It cleans the name itself so a
+ * caller can't file an override under the raw scraped form
+ * ("InstructorKatsianos, Bill") that lookups will never read back.
+ */
 export function cacheKey(instructorName: string): string {
-  return nameKey(instructorName);
+  return nameKey(cleanInstructorName(instructorName));
 }
 
 export async function lookupInstructor(
@@ -137,6 +142,9 @@ async function resolve(
 }
 
 export async function setOverride(instructorName: string, teacherId: string): Promise<RmpCacheEntry | null> {
+  // Must clean the name exactly as lookupInstructor does, or the correction is
+  // filed under "InstructorKatsianos, Bill" while lookups read
+  // "Katsianos, Bill" — the override silently never applies.
   const key = cacheKey(instructorName);
   await updateStored('rmpOverrides', (o) => ({ ...o, [key]: teacherId }));
   const teacher = await fetchTeacher(teacherId);
